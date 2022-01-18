@@ -1,0 +1,6 @@
+#pragma once
+#include <cstddef>
+
+static constexpr auto bmcdumpObjectPath = "/xyz/openbmc_project/dump/bmc";
+
+static constexpr auto bmcDumpObjectEntry = "/xyz/openbmc_project/dump/bmc/entry";

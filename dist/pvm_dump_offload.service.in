@@ -1,0 +1,12 @@
+[Unit]
+Description=Dump offload to virtual machine
+Wants=phosphor-debug-collector.service
+After=phosphor-debug-collector.service
+
+[Service]
+ExecStart=@bindir@/pvm_dump_offload
+Restart=always
+SyslogIdentifier=pvm_dump_offload
+
+[Install]
+WantedBy=multi-user.target
