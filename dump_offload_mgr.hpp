@@ -1,8 +1,19 @@
+#pragma once
+
+#include "dump_offload_handler.hpp"
+
+#include <memory>
 #include <sdbusplus/bus.hpp>
 #include <sdeventplus/source/event.hpp>
 
 namespace openpower::dump
 {
+/**
+ * @class DumpOffloadManager
+ * @brief To offload dumps to PHYP service parition by using PLDM commands
+ * @details Retrieves all the suported dumps entries and initiates PLDM
+ *         request to offload the dumps to PHYP service partition
+ */
 class DumpOffloadManager
 {
   public:
@@ -13,19 +24,19 @@ class DumpOffloadManager
     DumpOffloadManager& operator=(DumpOffloadManager&&) = delete;
     virtual ~DumpOffloadManager() = default;
 
-    /** @brief Constructor to put object onto bus at a dbus path.
-     *  @param[in] bus - Bus to attach to.
-     *  @param[in] event- event handle
+    /**
+     * @brief Constructor
+     * @param[in] bus - D-Bus to attach to.
      */
-    DumpOffloadManager(sdbusplus::bus::bus& bus, sdeventplus::Event& event) :
-        bus(bus), event(event)
-    {
-    }
+    DumpOffloadManager(sdbusplus::bus::bus& bus);
+
+    /**
+     * @brief Offload dumps existing on the system by sending PLDM request
+     */
+    void offload();
 
   private:
-    // sdbusplus DBus bus connection.
-    sdbusplus::bus::bus& bus;
-    // sdevent Event handle
-    sdeventplus::Event& event;
+    /*@brief list of dump offload objects */
+    std::vector<std::unique_ptr<DumpOffloadHandler>> _dumpOffloadList;
 };
 } // namespace openpower::dump

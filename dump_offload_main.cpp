@@ -15,7 +15,8 @@ int main()
     {
         auto bus = sdbusplus::bus::new_default();
         auto event = sdeventplus::Event::get_default();
-        openpower::dump::DumpOffloadManager manager(bus, event);
+        openpower::dump::DumpOffloadManager manager(bus);
+        manager.offload();
         bus.attach_event(event.get(), SD_EVENT_PRIORITY_NORMAL);
         return event.loop();
     }

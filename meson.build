@@ -36,6 +36,7 @@ phosphor_logging_dep = dependency(
 )
 
 systemd_dep = dependency('systemd')
+pldm_dep = dependency('libpldm')
 
 configure_file(
     input: 'config.h.in',
@@ -48,12 +49,19 @@ dump_offload_deps = [
     phosphor_logging_dep,
     sdbusplus_dep,
     sdeventplus_dep,
+    pldm_dep,
 ]
 
 executable(
     'pvm_dump_offload',
     'dump_offload_main.cpp',
     'dump_offload_mgr.cpp',
+    'dump_offload_handler.cpp',
+    'dump_dbus_util.cpp',
+    'pldm_utils.cpp',
+    'dbus_dump_watcher.cpp',
+    'dump_dbus_util.cpp',
+    'dump_send_pldm_cmd.cpp',
     dependencies: dump_offload_deps,
     install: true,
 )
