@@ -62,6 +62,7 @@ executable(
     'dbus_dump_watcher.cpp',
     'dump_dbus_util.cpp',
     'dump_send_pldm_cmd.cpp',
+    'pldm_oem_cmds.cpp',
     dependencies: dump_offload_deps,
     install: true,
 )

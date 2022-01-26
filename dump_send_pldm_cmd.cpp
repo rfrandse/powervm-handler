@@ -1,5 +1,7 @@
 #include "dump_send_pldm_cmd.hpp"
 
+#include "pldm_oem_cmds.hpp"
+
 #include <fmt/format.h>
 #include <libpldm/file_io.h>
 
@@ -13,6 +15,7 @@ using ::phosphor::logging::log;
 void sendNewDumpCmd(uint32_t dumpId, DumpType dumpType, uint64_t dumpSize)
 {
     uint32_t pldmDumpType = 0;
+    // TODO use PLDM dump types when the same is added to the header file
     switch (dumpType)
     {
         case DumpType::bmc:
@@ -39,6 +42,8 @@ void sendNewDumpCmd(uint32_t dumpId, DumpType dumpType, uint64_t dumpSize)
                                  "PldmDumpType({})",
                                  dumpId, dumpSize, dumpType, pldmDumpType)
                          .c_str());
-    // TODO - send pldm command
+
+    openpower::dump::pldm::ackNewDump(
+        dumpId, static_cast<pldm_fileio_file_type>(pldmDumpType), dumpSize);
 }
 } // namespace openpower::dump::pldm
