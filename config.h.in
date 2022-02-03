@@ -1,0 +1,16 @@
+#pragma once
+
+constexpr auto bmcDumpObjPath = "/xyz/openbmc_project/dump/bmc";
+constexpr auto bmcEntryObjPath = "/xyz/openbmc_project/dump/bmc/entry";
+constexpr auto dumpService = "xyz.openbmc_project.Dump.Manager";
+constexpr auto dumpObjPath = "/xyz/openbmc_project/dump";
+constexpr auto dbusPropIntf = "org.freedesktop.DBus.Properties";
+constexpr auto dbusObjManagerIntf = "org.freedesktop.DBus.ObjectManager";
+constexpr auto progressIntf = "xyz.openbmc_project.Common.Progress";
+constexpr auto entryIntf = "xyz.openbmc_project.Dump.Entry";
+constexpr auto progressComplete =
+        "xyz.openbmc_project.Common.Progress.OperationStatus.Completed";
+constexpr auto bmcEntryIntf = "xyz.openbmc_project.Dump.Entry.BMC";
+constexpr auto hostbootEntryIntf = "com.ibm.Dump.Entry.Hostboot";
+constexpr auto sbeEntryIntf = "com.ibm.Dump.Entry.SBE";
+constexpr auto hardwareEntryIntf = "com.ibm.Dump.Entry.Hardware";

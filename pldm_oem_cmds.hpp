@@ -1,0 +1,25 @@
+#pragma once
+
+#include <libpldm/file_io.h>
+#include <libpldm/pldm.h>
+
+namespace openpower::dump::pldm
+{
+namespace internal
+{
+/**
+ * @brief Reads the MCTP endpoint ID out of a file
+ */
+mctp_eid_t readEID();
+} // namespace internal
+/**
+ * @brief Acknowledge new dump creation
+ *
+ * @param[in] id - Dump id
+ * @param[in] dumpType - Type of the dump.
+ * @param[in] dumpSize - size of the dump
+ * @return NULL
+ *
+ */
+void ackNewDump(uint32_t id, pldm_fileio_file_type dumpType, uint64_t dumpSize);
+} // namespace openpower::dump::pldm
