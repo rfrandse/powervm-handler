@@ -12,6 +12,13 @@ namespace openpower::dump
 using ::openpower::dump::utility::DumpType;
 using ::openpower::dump::utility::ManagedObjectType;
 using ::sdbusplus::message::object_path;
+
+/**
+ * @class DumpDBusWatch
+ * @brief Add watch on new dump entries created so as to offload
+ * @details Adds watch on the dump progress property for the newly created
+ *  dumps. Initiates offload when dump progress property is changed to complete
+ */
 class DumpDBusWatch
 {
   public:
