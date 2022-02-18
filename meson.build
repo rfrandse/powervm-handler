@@ -52,6 +52,8 @@ dump_offload_deps = [
     pldm_dep,
 ]
 
+subdir('dist')
+
 executable(
     'pvm_dump_offload',
     'dump_offload_main.cpp',
