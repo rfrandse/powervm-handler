@@ -35,17 +35,28 @@ DumpDBusWatch::DumpDBusWatch(sdbusplus::bus::bus& bus,
 
 void DumpDBusWatch::interfaceAdded(sdbusplus::message::message& msg)
 {
+    // system can change from non-hmc to hmc managed system, do not offload
+    // if system changed to hmc managed system
+    if (isSystemHMCManaged(_bus))
+    {
+        return;
+    }
+    // Do not offload if host is not running
+    if (!isHostRunning(_bus))
+    {
+        return;
+    }
     sdbusplus::message::object_path objPath;
     DBusInteracesMap interfaces;
     msg.read(objPath, interfaces);
-    log<level::INFO>(
-        fmt::format("interfaceAdded path ({})", objPath.str).c_str());
     auto iter = interfaces.find(_entryIntf);
     if (iter == interfaces.end())
     {
         // ignore not specific to the dump type being watched
         return;
     }
+    log<level::INFO>(
+        fmt::format("interfaceAdded path ({})", objPath.str).c_str());
     uint32_t id = std::stoul(objPath.filename());
     _entryPropWatchList.emplace(
         objPath, std::make_unique<sdbusplus::bus::match_t>(
@@ -62,20 +73,31 @@ void DumpDBusWatch::interfaceRemoved(sdbusplus::message::message& msg)
     sdbusplus::message::object_path objPath;
     DBusInteracesMap interfaces;
     msg.read(objPath, interfaces);
-    log<level::INFO>(
-        fmt::format("interfaceRemoved path ({})", objPath.str).c_str());
     auto iter = interfaces.find(_entryIntf);
     if (iter == interfaces.end())
     {
         // ignore not specific to the dump type being watched
         return;
     }
+    log<level::INFO>(
+        fmt::format("interfaceRemoved path ({})", objPath.str).c_str());
     _entryPropWatchList.erase(objPath);
 }
 
 void DumpDBusWatch::propertiesChanged(const object_path& objPath, uint32_t id,
                                       sdbusplus::message::message& msg)
 {
+    // system can change from non-hmc to hmc managed system, do not offload
+    // if system changed to hmc managed system
+    if (isSystemHMCManaged(_bus))
+    {
+        return;
+    }
+    // Do not offload if host is not running
+    if (!isHostRunning(_bus))
+    {
+        return;
+    }
     std::string interface;
     DBusPropertiesMap propMap;
     msg.read(interface, propMap);
