@@ -21,11 +21,13 @@ int main()
         // Changing a system from non-hmc managed to hmc-manged can be done at
         // runtime.
         // Not creating offloader objects if system is HMC managed
-        if (!openpower::dump::isSystemHMCManaged(bus))
+        if (openpower::dump::isSystemHMCManaged(bus))
         {
-            openpower::dump::DumpOffloadManager manager(bus);
-            manager.offload();
+            log<level::ERR>("HMC managed system exiting the application");
+            return 0;
         }
+        openpower::dump::DumpOffloadManager manager(bus);
+        manager.offload();
         bus.attach_event(event.get(), SD_EVENT_PRIORITY_NORMAL);
         return event.loop();
     }
