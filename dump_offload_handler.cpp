@@ -68,6 +68,7 @@ void DumpOffloadHandler::offload(const ManagedObjectType& objects)
         log<level::ERR>(
             fmt::format("Failed to offload dump({}) ({})", _dumpType, ex.what())
                 .c_str());
+        throw;
     }
 }
 
