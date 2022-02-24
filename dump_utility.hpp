@@ -21,6 +21,7 @@ using DbusVariantType = sdbusplus::utility::dedup_variant_t<
  >;
 
 // clang-format on
+using DBusInteracesList = std::vector<std::string>;
 using DBusPropertiesMap = std::map<std::string, DbusVariantType>;
 using DBusInteracesMap = std::map<std::string, DBusPropertiesMap>;
 using ManagedObjectType =
