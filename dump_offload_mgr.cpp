@@ -89,6 +89,10 @@ void DumpOffloadManager::offloadHelper()
         // we can query only on the dump service not on individual entry types,
         // so we get dumps of all types
         ManagedObjectType objects = openpower::dump::getDumpEntries(_bus);
+        log<level::INFO>(
+            fmt::format("Initiating existing dumps offload size is ({}) ",
+                        objects.size())
+                .c_str());
 
         // offload only if there are any non offloaded dumps
         if (objects.size() > 0)

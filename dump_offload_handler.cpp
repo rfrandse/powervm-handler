@@ -28,11 +28,6 @@ void DumpOffloadHandler::offload(const ManagedObjectType& objects)
 {
     try
     {
-        log<level::INFO>(
-            fmt::format(
-                "DumpOffloadHandler::offload entryType ({}) dumpType ({})",
-                _entryIntf, _dumpType)
-                .c_str());
         ManagedObjectType inProgressDumps;
         for (auto& object : objects)
         {
