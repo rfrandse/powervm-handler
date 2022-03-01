@@ -1,5 +1,6 @@
 #pragma once
 
+#include "dump_offload_queue.hpp"
 #include "dump_utility.hpp"
 
 #include <map>
@@ -31,12 +32,13 @@ class DumpDBusWatch
 
     /**
      * @brief Watch on new dump objects created and property change
-     * @param[in] bus - Bus to attach to.
+     * @param[in] bus - Bus to attach to
+     * @param[in] offloader - To queue and offload dump
      * @param[in] entryIntf - dump entry interface (BMC/Host/SBE/Hardware)
      * @param[in] dumpType - dump type to watch
      */
-    DumpDBusWatch(sdbusplus::bus::bus& bus, const std::string& entryIntf,
-                  DumpType dumpType);
+    DumpDBusWatch(sdbusplus::bus::bus& bus, DumpOffloadQueue& offloader,
+                  const std::string& entryIntf, DumpType dumpType);
 
     /**
      * @brief Add all in progress dumps to property watch
@@ -72,6 +74,9 @@ class DumpDBusWatch
 
     /** @brief D-Bus to connect to */
     sdbusplus::bus::bus& _bus;
+
+    /** @brief Queue to offload dump requests */
+    DumpOffloadQueue& _dumpOffloader;
 
     /** @brief entry interface to watch for */
     std::string _entryIntf;

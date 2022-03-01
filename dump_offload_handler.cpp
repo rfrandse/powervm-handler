@@ -1,7 +1,6 @@
 #include "dump_offload_handler.hpp"
 
 #include "dump_dbus_util.hpp"
-#include "dump_send_pldm_cmd.hpp"
 #include "dump_utility.hpp"
 
 #include <fmt/format.h>
@@ -16,11 +15,12 @@ using ::phosphor::logging::level;
 using ::phosphor::logging::log;
 
 DumpOffloadHandler::DumpOffloadHandler(sdbusplus::bus::bus& bus,
+                                       DumpOffloadQueue& dumpOffloader,
                                        const std::string& entryIntf,
                                        DumpType dumpType) :
     _bus(bus),
-    _entryIntf(entryIntf), _dumpType(dumpType),
-    _dumpWatch(bus, entryIntf, dumpType)
+    _dumpOffloader(dumpOffloader), _entryIntf(entryIntf), _dumpType(dumpType),
+    _dumpWatch(bus, dumpOffloader, entryIntf, dumpType)
 {
 }
 
@@ -36,7 +36,6 @@ void DumpOffloadHandler::offload(const ManagedObjectType& objects)
             {
                 continue; // not watching
             }
-            uint32_t entryID = std::stoul(object.first.filename());
             bool fcomplete = isDumpProgressCompleted(object.second);
             if (!fcomplete)
             {
@@ -51,8 +50,9 @@ void DumpOffloadHandler::offload(const ManagedObjectType& objects)
                 fmt::format("DumpOffloadHandler::offload dump object ({})",
                             object.first.str)
                     .c_str());
-            uint64_t size = getDumpSize(_bus, object.first.str);
-            openpower::dump::pldm::sendNewDumpCmd(entryID, _dumpType, size);
+            // queue the dump for offloading
+            _dumpOffloader.enqueueForOffloading(object.first, _dumpType);
+
         } // end for
 
         // add any inprogress dumps to the watch list

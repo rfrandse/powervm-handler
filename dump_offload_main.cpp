@@ -26,6 +26,7 @@ int main()
             log<level::ERR>("HMC managed system exiting the application");
             return 0;
         }
+        log<level::ERR>("Non HMC managed system initiating dump offloads");
         openpower::dump::DumpOffloadManager manager(bus);
         manager.offload();
         bus.attach_event(event.get(), SD_EVENT_PRIORITY_NORMAL);

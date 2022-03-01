@@ -1,6 +1,7 @@
 #pragma once
 
 #include "dump_dbus_watch.hpp"
+#include "dump_offload_queue.hpp"
 #include "dump_utility.hpp"
 
 #include <sdbusplus/bus.hpp>
@@ -32,11 +33,12 @@ class DumpOffloadHandler
     /**
      * @brief constructor
      * @param[in] bus - D-Bus handle
+     * @param[in] offloader - To queue and offload dump
      * @param[in] entryIntf - entry interface to watch
      * @param[in] dumpType - type of the dump to watch
      */
-    DumpOffloadHandler(sdbusplus::bus::bus& bus, const std::string& entryIntf,
-                       DumpType dumpType);
+    DumpOffloadHandler(sdbusplus::bus::bus& bus, DumpOffloadQueue& offloader,
+                       const std::string& entryIntf, DumpType dumpType);
 
     /**
      * @brief Offload dump by sending request to PLDM
@@ -47,6 +49,9 @@ class DumpOffloadHandler
   protected:
     /* @brief sdbusplus DBus bus connection. */
     sdbusplus::bus::bus& _bus;
+
+    /** @brief Queue to offload dump requests */
+    DumpOffloadQueue& _dumpOffloader;
 
     /* @brief entry interface this object supports */
     const std::string _entryIntf;

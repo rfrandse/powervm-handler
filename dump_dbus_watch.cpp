@@ -3,7 +3,6 @@
 #include "dump_dbus_watch.hpp"
 
 #include "dump_dbus_util.hpp"
-#include "dump_send_pldm_cmd.hpp"
 
 #include <fmt/format.h>
 
@@ -20,18 +19,23 @@ using ::phosphor::logging::log;
 using ::sdbusplus::bus::match::rules::sender;
 
 DumpDBusWatch::DumpDBusWatch(sdbusplus::bus::bus& bus,
+                             DumpOffloadQueue& dumpOffloader,
                              const std::string& entryIntf, DumpType dumpType) :
     _bus(bus),
-    _entryIntf(entryIntf), _dumpType(dumpType),
-    _intfAddWatch(std::make_unique<sdbusplus::bus::match_t>(
+    _dumpOffloader(dumpOffloader), _entryIntf(entryIntf), _dumpType(dumpType)
+{
+    // we could watch only on the "sender" for the intefacesAdded signal rather
+    // than on the entry interface, we will be notified for all the new dumps,
+    // but pick only the ones we are interested.
+    _intfAddWatch = std::make_unique<sdbusplus::bus::match_t>(
         bus,
         sdbusplus::bus::match::rules::interfacesAdded() + sender(dumpService),
-        [this](auto& msg) { this->interfaceAdded(msg); })),
-    _intfRemWatch(std::make_unique<sdbusplus::bus::match_t>(
+        [this](auto& msg) { this->interfaceAdded(msg); });
+
+    _intfRemWatch = std::make_unique<sdbusplus::bus::match_t>(
         bus,
         sdbusplus::bus::match::rules::interfacesRemoved() + sender(dumpService),
-        [this](auto& msg) { this->interfaceRemoved(msg); }))
-{
+        [this](auto& msg) { this->interfaceRemoved(msg); });
 }
 
 void DumpDBusWatch::interfaceAdded(sdbusplus::message::message& msg)
@@ -94,6 +98,9 @@ void DumpDBusWatch::interfaceRemoved(sdbusplus::message::message& msg)
         }
         log<level::INFO>(
             fmt::format("interfaceRemoved path ({})", objPath.str).c_str());
+
+        // Remove from watch if incase the dump gets deleted while waiting for
+        // completion
         _entryPropWatchList.erase(objPath);
     }
     catch (const std::exception& ex)
@@ -140,8 +147,8 @@ void DumpDBusWatch::propertiesChanged(const object_path& objPath, uint32_t id,
             return;
         }
 
-        uint64_t size = getDumpSize(_bus, objPath.str);
-        openpower::dump::pldm::sendNewDumpCmd(id, _dumpType, size);
+        // queue the dump for offloading
+        _dumpOffloader.enqueueForOffloading(objPath, _dumpType);
 
         _entryPropWatchList.erase(objPath);
     }

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "dump_offload_handler.hpp"
+#include "dump_offload_queue.hpp"
 
 #include <memory>
 #include <sdbusplus/bus.hpp>
@@ -51,6 +52,9 @@ class DumpOffloadManager
 
     /** @brief D-Bus to connect to */
     sdbusplus::bus::bus& _bus;
+
+    /** @brief Queue to offload dump requests */
+    DumpOffloadQueue _dumpOffloader;
 
     /*@brief list of dump offload objects */
     std::vector<std::unique_ptr<DumpOffloadHandler>> _dumpOffloadHandlerList;
