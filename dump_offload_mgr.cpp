@@ -6,29 +6,32 @@
 
 namespace openpower::dump
 {
-DumpOffloadManager::DumpOffloadManager(sdbusplus::bus::bus& bus) : _bus(bus)
+DumpOffloadManager::DumpOffloadManager(sdbusplus::bus::bus& bus) :
+    _bus(bus), _dumpOffloader(bus)
 {
     // add bmc dump offload handler to the list of dump types to offload
     std::unique_ptr<DumpOffloadHandler> bmcDump =
-        std::make_unique<DumpOffloadHandler>(_bus, bmcEntryIntf, DumpType::bmc);
+        std::make_unique<DumpOffloadHandler>(_bus, _dumpOffloader, bmcEntryIntf,
+                                             DumpType::bmc);
     _dumpOffloadHandlerList.push_back(std::move(bmcDump));
 
     // add host dump offload handler to the list of dump types to offload
     std::unique_ptr<DumpOffloadHandler> hostbootDump =
-        std::make_unique<DumpOffloadHandler>(_bus, hostbootEntryIntf,
-                                             DumpType::hostboot);
+        std::make_unique<DumpOffloadHandler>(
+            _bus, _dumpOffloader, hostbootEntryIntf, DumpType::hostboot);
     _dumpOffloadHandlerList.push_back(std::move(hostbootDump));
 
     // add sbe dump offload handler to the list of dump types to offload
     std::unique_ptr<DumpOffloadHandler> sbeDump =
-        std::make_unique<DumpOffloadHandler>(_bus, sbeEntryIntf, DumpType::sbe);
+        std::make_unique<DumpOffloadHandler>(_bus, _dumpOffloader, sbeEntryIntf,
+                                             DumpType::sbe);
     _dumpOffloadHandlerList.push_back(std::move(sbeDump));
 
     // add hardware dump offload handler to the list of dump types to
     // offload
     std::unique_ptr<DumpOffloadHandler> hardwareDump =
-        std::make_unique<DumpOffloadHandler>(_bus, hardwareEntryIntf,
-                                             DumpType::hardware);
+        std::make_unique<DumpOffloadHandler>(
+            _bus, _dumpOffloader, hardwareEntryIntf, DumpType::hardware);
     _dumpOffloadHandlerList.push_back(std::move(hardwareDump));
 
     // Do not offload when host is not in running state so adding watch on
