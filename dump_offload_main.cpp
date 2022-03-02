@@ -21,12 +21,20 @@ int main()
         // Changing a system from non-hmc managed to hmc-manged can be done at
         // runtime.
         // Not creating offloader objects if system is HMC managed
+        // TODO #https://github.com/ibm-openbmc/powervm-handler/issues/8
         if (openpower::dump::isSystemHMCManaged(bus))
         {
             log<level::ERR>("HMC managed system exiting the application");
             return 0;
         }
-        log<level::ERR>("Non HMC managed system initiating dump offloads");
+        log<level::INFO>("Non HMC managed system initiating dump offloads");
+
+        if (!openpower::dump::isHostRunning(bus))
+        {
+            log<level::ERR>("Host is not in running state, offload will start "
+                            "when Host changes to running state");
+        }
+
         openpower::dump::DumpOffloadManager manager(bus);
         manager.offload();
         bus.attach_event(event.get(), SD_EVENT_PRIORITY_NORMAL);

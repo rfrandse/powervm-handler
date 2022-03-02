@@ -13,28 +13,29 @@ namespace openpower::dump
 using ::openpower::dump::utility::DBusInteracesList;
 using ::openpower::dump::utility::DBusInteracesMap;
 using ::openpower::dump::utility::DBusPropertiesMap;
-using ::openpower::dump::utility::ManagedObjectType;
 using ::phosphor::logging::level;
 using ::phosphor::logging::log;
 using ::sdbusplus::bus::match::rules::sender;
 
 DumpDBusWatch::DumpDBusWatch(sdbusplus::bus::bus& bus,
-                             DumpOffloadQueue& dumpOffloader,
-                             const std::string& entryIntf, DumpType dumpType) :
+                             DumpOffloadQueue& dumpQueue,
+                             const std::string& entryIntf,
+                             const std::string& entryObjPath,
+                             DumpType dumpType) :
     _bus(bus),
-    _dumpOffloader(dumpOffloader), _entryIntf(entryIntf), _dumpType(dumpType)
+    _dumpQueue(dumpQueue), _entryIntf(entryIntf), _dumpType(dumpType)
 {
-    // we could watch only on the "sender" for the intefacesAdded signal rather
-    // than on the entry interface, we will be notified for all the new dumps,
-    // but pick only the ones we are interested.
     _intfAddWatch = std::make_unique<sdbusplus::bus::match_t>(
         bus,
-        sdbusplus::bus::match::rules::interfacesAdded() + sender(dumpService),
+        sdbusplus::bus::match::rules::interfacesAdded() + sender(dumpService) +
+            sdbusplus::bus::match::rules::argNpath(0, entryObjPath),
         [this](auto& msg) { this->interfaceAdded(msg); });
 
     _intfRemWatch = std::make_unique<sdbusplus::bus::match_t>(
         bus,
-        sdbusplus::bus::match::rules::interfacesRemoved() + sender(dumpService),
+        sdbusplus::bus::match::rules::interfacesRemoved() +
+            sender(dumpService) +
+            sdbusplus::bus::match::rules::argNpath(0, entryObjPath),
         [this](auto& msg) { this->interfaceRemoved(msg); });
 }
 
@@ -42,42 +43,24 @@ void DumpDBusWatch::interfaceAdded(sdbusplus::message::message& msg)
 {
     try
     {
-        // system can change from non-hmc to hmc managed system, do not offload
-        // if system changed to hmc managed system
-        if (isSystemHMCManaged(_bus))
-        {
-            return;
-        }
-        // Do not offload if host is not running
-        if (!isHostRunning(_bus))
-        {
-            return;
-        }
         sdbusplus::message::object_path objPath;
         DBusInteracesMap interfaces;
         msg.read(objPath, interfaces);
-        auto iter = interfaces.find(_entryIntf);
-        if (iter == interfaces.end())
-        {
-            // ignore not specific to the dump type being watched
-            return;
-        }
         log<level::INFO>(
-            fmt::format("interfaceAdded path ({})", objPath.str).c_str());
-        uint32_t id = std::stoul(objPath.filename());
+            fmt::format("Watch interfaceAdded path ({})", objPath.str).c_str());
         _entryPropWatchList.emplace(
             objPath, std::make_unique<sdbusplus::bus::match_t>(
                          _bus,
                          sdbusplus::bus::match::rules::propertiesChanged(
                              objPath, progressIntf),
-                         [this, objPath, id](auto& msg) {
-                             this->propertiesChanged(objPath, id, msg);
+                         [this, objPath](auto& msg) {
+                             this->propertiesChanged(objPath, msg);
                          }));
     }
     catch (const std::exception& ex)
     {
         log<level::ERR>(
-            fmt::format("Exception in watch interfaceAdded ({})", ex.what())
+            fmt::format("Watch exception in interfaceAdded ({})", ex.what())
                 .c_str());
         throw;
     }
@@ -90,113 +73,84 @@ void DumpDBusWatch::interfaceRemoved(sdbusplus::message::message& msg)
         sdbusplus::message::object_path objPath;
         DBusInteracesList interfaces;
         msg.read(objPath, interfaces);
-        auto iter = std::find(interfaces.begin(), interfaces.end(), _entryIntf);
-        if (iter == interfaces.end())
-        {
-            // ignore not specific to the dump type being watched
-            return;
-        }
         log<level::INFO>(
-            fmt::format("interfaceRemoved path ({})", objPath.str).c_str());
+            fmt::format("Watch interfaceRemoved path ({})", objPath.str)
+                .c_str());
 
-        // Remove from watch if incase the dump gets deleted while waiting for
-        // completion
+        _dumpQueue.dequeueForOffloading(objPath);
         _entryPropWatchList.erase(objPath);
     }
     catch (const std::exception& ex)
     {
         log<level::ERR>(
-            fmt::format("Exception in watch interfaceRemoved ({})", ex.what())
+            fmt::format("Watch exception in interfaceRemoved ({})", ex.what())
                 .c_str());
         throw;
     }
 }
 
-void DumpDBusWatch::propertiesChanged(const object_path& objPath, uint32_t id,
+void DumpDBusWatch::propertiesChanged(const object_path& objPath,
                                       sdbusplus::message::message& msg)
 {
     try
     {
-        // system can change from non-hmc to hmc managed system, do not offload
-        // if system changed to hmc managed system
-        if (isSystemHMCManaged(_bus))
-        {
-            return;
-        }
-        // Do not offload if host is not running
-        if (!isHostRunning(_bus))
-        {
-            return;
-        }
         std::string interface;
         DBusPropertiesMap propMap;
         msg.read(interface, propMap);
         log<level::INFO>(
-            fmt::format("propertiesChanged object path ({}) id ({})",
-                        objPath.str, id)
+            fmt::format("Watch propertiesChanged object path ({})", objPath.str)
                 .c_str());
 
         bool fcomplete = isDumpProgressCompleted(propMap);
         if (!fcomplete)
         {
             log<level::DEBUG>(
-                fmt::format("propertiesChanged object path ({}) status is not "
-                            "complete",
+                fmt::format("Watch propertiesChanged object path ({}) "
+                            "status is not completed",
                             objPath.str)
                     .c_str());
             return;
         }
 
         // queue the dump for offloading
-        _dumpOffloader.enqueueForOffloading(objPath, _dumpType);
+        _dumpQueue.enqueueForOffloading(objPath, _dumpType);
 
         _entryPropWatchList.erase(objPath);
     }
     catch (const std::exception& ex)
     {
         log<level::ERR>(
-            fmt::format("Exception in watch propertiesChanged ({})", ex.what())
+            fmt::format("Watch exception in propertiesChanged ({})", ex.what())
                 .c_str());
         throw;
     }
 }
 
-void DumpDBusWatch::addInProgressDumpsToWatch(const ManagedObjectType& objects)
+void DumpDBusWatch::addInProgressDumpsToWatch(std::vector<std::string> paths)
 {
     try
     {
-        for (auto& object : objects)
+        for (auto& path : paths)
         {
-            object_path objectPath = object.first;
-            auto iter = object.second.find(_entryIntf);
-            if (iter == object.second.end())
-            {
-                continue;
-            }
-            bool fcomplete = isDumpProgressCompleted(object.second);
-            if (!fcomplete)
-            {
-                uint32_t id = std::stoul(object.first.filename());
-                log<level::INFO>(
-                    fmt::format("addInProgressDumpsToWatch object path ({})",
-                                objectPath.str)
-                        .c_str());
-                _entryPropWatchList.emplace(
-                    objectPath,
-                    std::make_unique<sdbusplus::bus::match_t>(
-                        _bus,
-                        sdbusplus::bus::match::rules::propertiesChanged(
-                            objectPath, progressIntf),
-                        [this, objectPath, id](auto& msg) {
-                            this->propertiesChanged(objectPath, id, msg);
-                        }));
-            }
+            log<level::INFO>(
+                fmt::format("Watch addInProgressDumpsToWatch object path ({})",
+                            path)
+                    .c_str());
+            object_path objPath = path;
+            _entryPropWatchList.emplace(
+                objPath, std::make_unique<sdbusplus::bus::match_t>(
+                             _bus,
+                             sdbusplus::bus::match::rules::propertiesChanged(
+                                 objPath, progressIntf),
+                             [this, objPath](auto& msg) {
+                                 this->propertiesChanged(objPath, msg);
+                             }));
         }
     }
     catch (const std::exception& ex)
     {
         log<level::ERR>(
-            fmt::format("Exception in addInProgressDumpsToWatch ({})",
+            fmt::format("Watch exception in addInProgressDumpsToWatch ({})",
                         ex.what())
                 .c_str());
         throw;

@@ -10,11 +10,10 @@
 
 namespace openpower::dump
 {
-using ::openpower::dump::utility::DBusInteracesMap;
 using ::openpower::dump::utility::DBusPropertiesMap;
-using ::openpower::dump::utility::ManagedObjectType;
 using ::phosphor::logging::level;
 using ::phosphor::logging::log;
+using ::sdbusplus::message::object_path;
 
 using ProgressStages = sdbusplus::xyz::openbmc_project::State::Boot::server::
     Progress::ProgressStages;
@@ -24,18 +23,19 @@ using DBusProgressValue_t =
 
 /**
  * @brief Read progress property from the interface map object
- * @param[in] intfMap map of interfaces and its properties
- * @return true if progress is complete else false
- */
-bool isDumpProgressCompleted(const DBusInteracesMap& intfMap);
-
-/**
- * @brief Read progress property from the interface map object
- * @param[in] propMao map of properties and its values
+ * @param[in] propMap map of properties and its values
  * @return true if progress is complete else false
  */
 bool isDumpProgressCompleted(const DBusPropertiesMap& propMap);
 
+/**
+ * @brief Read progress property from the D-Bus object
+ * @param[in] bus - D-Bus handle
+ * @param[in] objectPath - D-Bus object path
+ * @return true if progress is complete else false
+ */
+bool isDumpProgressCompleted(sdbusplus::bus::bus& bus,
+                             const std::string& objectPath);
 /**
  * @brief Read dump size from the interface map object
  * @param[in] bus - D-Bus handle
@@ -43,13 +43,6 @@ bool isDumpProgressCompleted(const DBusPropertiesMap& propMap);
  * @return dump size value
  */
 uint64_t getDumpSize(sdbusplus::bus::bus& bus, const std::string& objectPath);
-
-/**
- * @brief Read available dump entries from the system
- * @param[in] bus D-Bus handle
- * @return D-Bus entries with properties
- */
-ManagedObjectType getDumpEntries(sdbusplus::bus::bus& bus);
 
 /**
  * @brief Read D-Bus property to check if system is HMC managed
@@ -105,4 +98,14 @@ T readDBusProperty(sdbusplus::bus::bus& bus, const std::string& service,
  * @return true if host is running else false
  */
 bool isHostRunning(sdbusplus::bus::bus& bus);
+
+/**
+ * @brief Read avaialble dumps implementing the dump type entry interface
+ * @param[in] bus D-Bus handle
+ * @param[in] entryIntf identifies type of the dump
+ * @return D-Bus object paths
+ */
+const std::vector<std::string>
+    getDumpEntryObjPaths(sdbusplus::bus::bus& bus,
+                         const std::string& entryIntf);
 } // namespace openpower::dump

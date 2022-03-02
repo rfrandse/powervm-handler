@@ -3,35 +3,36 @@
 #include "dump_offload_mgr.hpp"
 
 #include "dump_dbus_util.hpp"
-
 namespace openpower::dump
 {
 DumpOffloadManager::DumpOffloadManager(sdbusplus::bus::bus& bus) :
-    _bus(bus), _dumpOffloader(bus)
+    _bus(bus), _dumpQueue(bus)
 {
     // add bmc dump offload handler to the list of dump types to offload
     std::unique_ptr<DumpOffloadHandler> bmcDump =
-        std::make_unique<DumpOffloadHandler>(_bus, _dumpOffloader, bmcEntryIntf,
-                                             DumpType::bmc);
+        std::make_unique<DumpOffloadHandler>(_bus, _dumpQueue, bmcEntryIntf,
+                                             bmcEntryObjPath, DumpType::bmc);
     _dumpOffloadHandlerList.push_back(std::move(bmcDump));
 
     // add host dump offload handler to the list of dump types to offload
     std::unique_ptr<DumpOffloadHandler> hostbootDump =
         std::make_unique<DumpOffloadHandler>(
-            _bus, _dumpOffloader, hostbootEntryIntf, DumpType::hostboot);
+            _bus, _dumpQueue, hostbootEntryIntf, hostbootEntryObjPath,
+            DumpType::hostboot);
     _dumpOffloadHandlerList.push_back(std::move(hostbootDump));
 
     // add sbe dump offload handler to the list of dump types to offload
     std::unique_ptr<DumpOffloadHandler> sbeDump =
-        std::make_unique<DumpOffloadHandler>(_bus, _dumpOffloader, sbeEntryIntf,
-                                             DumpType::sbe);
+        std::make_unique<DumpOffloadHandler>(_bus, _dumpQueue, sbeEntryIntf,
+                                             sbeEntryObjPath, DumpType::sbe);
     _dumpOffloadHandlerList.push_back(std::move(sbeDump));
 
     // add hardware dump offload handler to the list of dump types to
     // offload
     std::unique_ptr<DumpOffloadHandler> hardwareDump =
         std::make_unique<DumpOffloadHandler>(
-            _bus, _dumpOffloader, hardwareEntryIntf, DumpType::hardware);
+            _bus, _dumpQueue, hardwareEntryIntf, hardwareEntryObjPath,
+            DumpType::hardware);
     _dumpOffloadHandlerList.push_back(std::move(hardwareDump));
 
     // Do not offload when host is not in running state so adding watch on
@@ -46,10 +47,10 @@ DumpOffloadManager::DumpOffloadManager(sdbusplus::bus::bus& bus) :
         sdbusplus::bus::match::rules::propertiesChanged(
             "/xyz/openbmc_project/state/host0",
             "xyz.openbmc_project.State.Boot.Progress"),
-        [this](auto& msg) { this->propertiesChanged(msg); });
+        [this](auto& msg) { this->hostStatePropChanged(msg); });
 }
 
-void DumpOffloadManager::propertiesChanged(sdbusplus::message::message& msg)
+void DumpOffloadManager::hostStatePropChanged(sdbusplus::message::message& msg)
 {
     std::string intf;
     DBusPropertiesMap propMap;
@@ -76,33 +77,9 @@ void DumpOffloadManager::propertiesChanged(sdbusplus::message::message& msg)
                                     " state ",
                                     *progress)
                             .c_str());
-                    offloadHelper();
+                    // offload the already queued dumps now
+                    _dumpQueue.offload();
                 }
-            }
-        }
-    }
-}
-
-void DumpOffloadManager::offloadHelper()
-{
-    // HMC might go from Non-hmc to HMC managed system so off load only
-    // if it is non HMC
-    if (!isSystemHMCManaged(_bus))
-    {
-        // we can query only on the dump service not on individual entry types,
-        // so we get dumps of all types
-        ManagedObjectType objects = openpower::dump::getDumpEntries(_bus);
-        log<level::INFO>(
-            fmt::format("Initiating existing dumps offload size is ({}) ",
-                        objects.size())
-                .c_str());
-
-        // offload only if there are any non offloaded dumps
-        if (objects.size() > 0)
-        {
-            for (auto& dump : _dumpOffloadHandlerList)
-            {
-                dump->offload(objects);
             }
         }
     }
@@ -110,9 +87,9 @@ void DumpOffloadManager::offloadHelper()
 
 void DumpOffloadManager::offload()
 {
-    if (isHostRunning(_bus))
+    for (auto& dump : _dumpOffloadHandlerList)
     {
-        offloadHelper();
+        dump->offload();
     }
 }
 } // namespace openpower::dump

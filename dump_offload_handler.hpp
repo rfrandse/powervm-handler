@@ -9,8 +9,6 @@
 
 namespace openpower::dump
 {
-using ::openpower::dump::utility::DBusInteracesMap;
-using ::openpower::dump::utility::ManagedObjectType;
 
 /**
  * @class DumpOffloadHandler
@@ -35,16 +33,18 @@ class DumpOffloadHandler
      * @param[in] bus - D-Bus handle
      * @param[in] offloader - To queue and offload dump
      * @param[in] entryIntf - entry interface to watch
+     * @param[in] entryObjPath - entry object path to watch
      * @param[in] dumpType - type of the dump to watch
      */
     DumpOffloadHandler(sdbusplus::bus::bus& bus, DumpOffloadQueue& offloader,
-                       const std::string& entryIntf, DumpType dumpType);
+                       const std::string& entryIntf,
+                       const std::string& entryObjPath, DumpType dumpType);
 
     /**
      * @brief Offload dump by sending request to PLDM
      * @param[in] existing dump objects
      */
-    void offload(const ManagedObjectType& objects);
+    void offload();
 
   protected:
     /* @brief sdbusplus DBus bus connection. */

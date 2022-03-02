@@ -5,28 +5,31 @@
 #include <variant>
 namespace openpower::dump
 {
+using ::openpower::dump::utility::DbusVariantType;
 
-bool isDumpProgressCompleted(const DBusInteracesMap& intfMap)
+bool isDumpProgressCompleted(sdbusplus::bus::bus& bus,
+                             const std::string& objectPath)
 {
-    for (auto& intf : intfMap)
+    try
     {
-        if (intf.first == progressIntf)
+        auto retVal = readDBusProperty<DbusVariantType>(
+            bus, dumpService, objectPath, progressIntf, "Status");
+        auto status = std::get_if<std::string>(&retVal);
+        if (status != nullptr)
         {
-            for (auto& prop : intf.second)
+            if (*status == progressComplete)
             {
-                if (prop.first == "Status")
-                {
-                    auto status = std::get_if<std::string>(&prop.second);
-                    if (status != nullptr)
-                    {
-                        if (*status == progressComplete)
-                        {
-                            return true;
-                        }
-                    }
-                }
+                return true;
             }
         }
+    }
+    catch (const std::exception& ex)
+    {
+        log<level::ERR>(
+            fmt::format("Failed to get dump ({}) progress property ({})",
+                        objectPath, ex.what())
+                .c_str());
+        throw;
     }
     return false;
 }
@@ -52,7 +55,6 @@ bool isDumpProgressCompleted(const DBusPropertiesMap& propMap)
 
 uint64_t getDumpSize(sdbusplus::bus::bus& bus, const std::string& objectPath)
 {
-    using ::openpower::dump::utility::DbusVariantType;
     uint64_t size = 0;
     try
     {
@@ -70,32 +72,13 @@ uint64_t getDumpSize(sdbusplus::bus::bus& bus, const std::string& objectPath)
     }
     catch (const std::exception& ex)
     {
-        log<level::ERR>(
-            fmt::format("Failed to get dump size property ({})", ex.what())
+        log<level::INFO>(
+            fmt::format("Failed to get dump size property object ({}) ex({})",
+                        objectPath, ex.what())
                 .c_str());
         throw;
     }
     return size;
-}
-
-ManagedObjectType getDumpEntries(sdbusplus::bus::bus& bus)
-{
-    ManagedObjectType objects;
-    try
-    {
-        auto getManagedObjects = bus.new_method_call(
-            dumpService, dumpObjPath, dbusObjManagerIntf, "GetManagedObjects");
-        auto reply = bus.call(getManagedObjects);
-        reply.read(objects);
-    }
-    catch (const sdbusplus::exception::exception& ex)
-    {
-        log<level::ERR>(
-            fmt::format("Failed to get dump entries list ({})", ex.what())
-                .c_str());
-        throw;
-    }
-    return objects;
 }
 
 bool isSystemHMCManaged(sdbusplus::bus::bus& bus)
@@ -188,6 +171,39 @@ bool isHostRunning(sdbusplus::bus::bus& bus)
                 .c_str());
     }
     return false;
+}
+
+const std::vector<std::string>
+    getDumpEntryObjPaths(sdbusplus::bus::bus& bus, const std::string& entryIntf)
+{
+    std::vector<std::string> liObjectPaths;
+    try
+    {
+        auto mapperCall = bus.new_method_call(
+            "xyz.openbmc_project.ObjectMapper",
+            "/xyz/openbmc_project/object_mapper",
+            "xyz.openbmc_project.ObjectMapper", "GetSubTreePaths");
+        const int32_t depth = 0;
+        std::vector<std::string> intf{entryIntf};
+        mapperCall.append(dumpObjPath);
+        mapperCall.append(depth);
+        mapperCall.append(intf);
+        auto response = bus.call(mapperCall);
+        response.read(liObjectPaths);
+        log<level::INFO>(
+            fmt::format("DUMP objects size received is ({}) entry({})",
+                        liObjectPaths.size(), entryIntf)
+                .c_str());
+    }
+    catch (const std::exception& ex)
+    {
+        log<level::ERR>(
+            fmt::format("Failed to get dump entry objects entry({}) ex({})",
+                        entryIntf, ex.what())
+                .c_str());
+        throw;
+    }
+    return liObjectPaths;
 }
 
 } // namespace openpower::dump

@@ -38,23 +38,17 @@ class DumpOffloadManager
 
   private:
     /**
-     * @brief helper method to do the offload
-     * @return void
-     */
-    void offloadHelper();
-
-    /**
      * @brief Callback method for property change on the host state object
      * @param[in] msg response msg from D-Bus request
      * @return void
      */
-    void propertiesChanged(sdbusplus::message::message& msg);
+    void hostStatePropChanged(sdbusplus::message::message& msg);
 
     /** @brief D-Bus to connect to */
     sdbusplus::bus::bus& _bus;
 
     /** @brief Queue to offload dump requests */
-    DumpOffloadQueue _dumpOffloader;
+    DumpOffloadQueue _dumpQueue;
 
     /*@brief list of dump offload objects */
     std::vector<std::unique_ptr<DumpOffloadHandler>> _dumpOffloadHandlerList;
