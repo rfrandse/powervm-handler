@@ -10,8 +10,8 @@
 
 namespace openpower::dump
 {
+
 using ::openpower::dump::utility::DumpType;
-using ::openpower::dump::utility::ManagedObjectType;
 using ::sdbusplus::message::object_path;
 
 /**
@@ -33,19 +33,21 @@ class DumpDBusWatch
     /**
      * @brief Watch on new dump objects created and property change
      * @param[in] bus - Bus to attach to
-     * @param[in] offloader - To queue and offload dump
+     * @param[in] dumpQueue - To queue and offload dump
      * @param[in] entryIntf - dump entry interface (BMC/Host/SBE/Hardware)
+     * @param[in] entryObjPath - dump entry object path
      * @param[in] dumpType - dump type to watch
      */
-    DumpDBusWatch(sdbusplus::bus::bus& bus, DumpOffloadQueue& offloader,
-                  const std::string& entryIntf, DumpType dumpType);
+    DumpDBusWatch(sdbusplus::bus::bus& bus, DumpOffloadQueue& dumpQueue,
+                  const std::string& entryIntf, const std::string& entryObjPath,
+                  DumpType dumpType);
 
     /**
      * @brief Add all in progress dumps to property watch
-     * @param[in] objects dump objects whose progress is not yet completed
+     * @param[in] objects dump object paths
      * @return void
      */
-    void addInProgressDumpsToWatch(const ManagedObjectType& objects);
+    void addInProgressDumpsToWatch(std::vector<std::string> paths);
 
   private:
     /**
@@ -65,18 +67,17 @@ class DumpDBusWatch
     /**
      * @brief Callback method for property change on the entry object
      * @param[in] objPath Object path of the dump entry
-     * @param[in] id ID of the dump entry
      * @param[in] msg response msg from D-Bus request
      * @return void
      */
-    void propertiesChanged(const object_path& objPath, uint32_t id,
+    void propertiesChanged(const object_path& objPath,
                            sdbusplus::message::message& msg);
 
     /** @brief D-Bus to connect to */
     sdbusplus::bus::bus& _bus;
 
     /** @brief Queue to offload dump requests */
-    DumpOffloadQueue& _dumpOffloader;
+    DumpOffloadQueue& _dumpQueue;
 
     /** @brief entry interface to watch for */
     std::string _entryIntf;

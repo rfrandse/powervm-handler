@@ -4,7 +4,6 @@
 
 #include <map>
 #include <sdbusplus/bus.hpp>
-#include <sdbusplus/bus/match.hpp>
 
 namespace openpower::dump
 {
@@ -13,7 +12,10 @@ using ::sdbusplus::message::object_path;
 
 /**
  * @class DumpOffloadQueue
- * @brief Queue to send dump offload requests when one offload is completed
+ * @brief Queue the dump offload request and send one by one after the
+ *        offload is completed. When an offload is completed the dump D-Bus
+ *        object will be deleted, subscribe to that signal and then offload
+ *        the next dump in the queue.
  * @details PHYP could not handle multiple dump offload requests at the same
  *          time, queueing the requests and sending when one offload is done
  */
@@ -36,23 +38,24 @@ class DumpOffloadQueue
     /**
      * @brief Queue the dumps for offloading
      * @param[in] path - D-Bus path of the dump object
-     * @param[in] path - type of the dump to offload
+     * @param[in] type - type of the dump to offload
      */
     void enqueueForOffloading(const object_path& path, DumpType type);
 
-  private:
+    /**
+     * @brief DeQueue the dumps from offloading
+     *        Dequeue can happen after succesfull offload or when dump objects
+     *        are deleted by redfish client
+     * @param[in] path - D-Bus path of the dump object
+     */
+    void dequeueForOffloading(const object_path& path);
+
     /**
      * @brief Offload the next available dump from the queue
      */
     void offload();
 
-    /**
-     * @brief Callback method for deletion of dump entry object
-     * @param[in] msg response msg from D-Bus request
-     * @return void
-     */
-    void interfaceRemoved(sdbusplus::message::message& msg);
-
+  private:
     /** @brief D-Bus to connect to */
     sdbusplus::bus::bus& _bus;
 
@@ -61,8 +64,5 @@ class DumpOffloadQueue
 
     /** @brief dump object currently in offload */
     std::string _offloadObjPath;
-
-    /** @brief watch pointer for interfaces removed */
-    std::unique_ptr<sdbusplus::bus::match_t> _intfRemWatch;
 };
 } // namespace openpower::dump

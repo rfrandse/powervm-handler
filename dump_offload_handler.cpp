@@ -1,3 +1,5 @@
+#include "config.h"
+
 #include "dump_offload_handler.hpp"
 
 #include "dump_dbus_util.hpp"
@@ -17,51 +19,48 @@ using ::phosphor::logging::log;
 DumpOffloadHandler::DumpOffloadHandler(sdbusplus::bus::bus& bus,
                                        DumpOffloadQueue& dumpOffloader,
                                        const std::string& entryIntf,
+                                       const std::string& entryObjPath,
                                        DumpType dumpType) :
     _bus(bus),
     _dumpOffloader(dumpOffloader), _entryIntf(entryIntf), _dumpType(dumpType),
-    _dumpWatch(bus, dumpOffloader, entryIntf, dumpType)
+    _dumpWatch(bus, dumpOffloader, entryIntf, entryObjPath, dumpType)
 {
 }
 
-void DumpOffloadHandler::offload(const ManagedObjectType& objects)
+void DumpOffloadHandler::offload()
 {
     try
     {
-        ManagedObjectType inProgressDumps;
-        for (auto& object : objects)
+        auto objectPaths = getDumpEntryObjPaths(_bus, _entryIntf);
+        std::vector<std::string> inProgressDumps;
+        for (auto& path : objectPaths)
         {
-            auto iter = object.second.find(_entryIntf);
-            if (iter == object.second.end())
-            {
-                continue; // not watching
-            }
-            bool fcomplete = isDumpProgressCompleted(object.second);
+            bool fcomplete = isDumpProgressCompleted(_bus, path);
             if (!fcomplete)
             {
-                log<level::INFO>(fmt::format("Dump generation is not completed "
-                                             "so not offloading ({})",
-                                             object.first.str)
-                                     .c_str());
-                inProgressDumps.emplace_back(object.first, object.second);
+                log<level::INFO>(
+                    fmt::format("Offloader dump is not"
+                                " completed, adding to watcher ({})",
+                                path)
+                        .c_str());
+                inProgressDumps.emplace_back(path);
                 continue;
             }
             log<level::INFO>(
-                fmt::format("DumpOffloadHandler::offload dump object ({})",
-                            object.first.str)
+                fmt::format("Offloader queue dump to offload ({})", path)
                     .c_str());
             // queue the dump for offloading
-            _dumpOffloader.enqueueForOffloading(object.first, _dumpType);
+            _dumpOffloader.enqueueForOffloading(path, _dumpType);
 
         } // end for
 
         // add any inprogress dumps to the watch list
-        _dumpWatch.addInProgressDumpsToWatch(inProgressDumps);
+        _dumpWatch.addInProgressDumpsToWatch(std::move(inProgressDumps));
     }
     catch (const std::exception& ex)
     {
         log<level::ERR>(
-            fmt::format("Failed to offload dump({}) ({})", _dumpType, ex.what())
+            fmt::format("Offloader failed to offload dump ex ({})", ex.what())
                 .c_str());
         throw;
     }

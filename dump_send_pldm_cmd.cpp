@@ -15,7 +15,7 @@ using ::phosphor::logging::log;
 void sendNewDumpCmd(uint32_t dumpId, DumpType dumpType, uint64_t dumpSize)
 {
     uint32_t pldmDumpType = 0;
-    // TODO use PLDM dump types when the same is added to the header file
+    // TODO https://github.com/ibm-openbmc/powervm-handler/issues/9
     switch (dumpType)
     {
         case DumpType::bmc:

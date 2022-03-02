@@ -9,7 +9,7 @@ Conflicts=obmc-host-timeout@0.target
 
 [Service]
 ExecStart=@bindir@/pvm_dump_offload
-Restart=always
+Restart=on-failure
 SyslogIdentifier=pvm_dump_offload
 
 [Install]

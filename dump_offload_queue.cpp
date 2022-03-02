@@ -18,18 +18,16 @@ using ::sdbusplus::bus::match::rules::sender;
 
 DumpOffloadQueue::DumpOffloadQueue(sdbusplus::bus::bus& bus) : _bus(bus)
 {
-    _intfRemWatch = std::make_unique<sdbusplus::bus::match_t>(
-        bus,
-        sdbusplus::bus::match::rules::interfacesRemoved() + sender(dumpService),
-        [this](auto& msg) { this->interfaceRemoved(msg); });
 }
 
 void DumpOffloadQueue::enqueueForOffloading(const object_path& path,
                                             DumpType type)
 {
     log<level::INFO>(
-        fmt::format("queueing for offload path ({}) ", path.str).c_str());
+        fmt::format("Queue enqueue dump for offload path ({}) ", path.str)
+            .c_str());
     _offloadDumpList.emplace(path.str, type);
+
     offload();
 }
 
@@ -39,6 +37,17 @@ void DumpOffloadQueue::offload()
     {
         if (_offloadObjPath.empty() && !_offloadDumpList.empty())
         {
+            // do not offload if host is not running
+            if (!isHostRunning(_bus))
+            {
+                return;
+            }
+
+            // do not offload if system is hmc managed
+            if (isSystemHMCManaged(_bus))
+            {
+                return;
+            }
             auto iter = _offloadDumpList.begin();
             _offloadObjPath = iter->first;
             object_path path = _offloadObjPath;
@@ -46,53 +55,69 @@ void DumpOffloadQueue::offload()
             uint64_t size = getDumpSize(_bus, _offloadObjPath);
             DumpType type = iter->second;
             log<level::INFO>(
-                fmt::format("offload queue initiating offload ({}) id ({}) "
+                fmt::format("Queue offload initiating offload ({}) id ({}) "
                             "type ({}) size ({})",
                             _offloadObjPath, id, type, size)
                     .c_str());
             openpower::dump::pldm::sendNewDumpCmd(id, type, size);
         }
+        else if (_offloadDumpList.empty())
+        {
+            log<level::INFO>(
+                fmt::format("Queue nothing to offload listsize ({})",
+                            _offloadDumpList.size())
+                    .c_str());
+        }
     }
     catch (const std::exception& ex)
     {
-        log<level::ERR>(
-            fmt::format("exception caught to send pldm cmd ({})", ex.what())
+        log<level::INFO>(
+            fmt::format("Queue dump ({}) deleted/pldm error ({}), try another"
+                        " dump",
+                        _offloadObjPath, ex.what())
                 .c_str());
-        throw;
+        // race-condition while dumps are getting deleted it tries to offload
+        // but the object is not found, so try another dump rather than
+        // getting stuck. PLDM could also hit race condition when it is
+        // trying to get the path from D-bus it might not find the dump.
+
+        // This race condition will hit when we deleteall the dumps while
+        // one is in progres
+        _offloadDumpList.erase(_offloadObjPath);
+        _offloadObjPath.clear();
+        offload();
     }
 }
 
-void DumpOffloadQueue::interfaceRemoved(sdbusplus::message::message& msg)
+void DumpOffloadQueue::dequeueForOffloading(const object_path& path)
 {
     try
     {
-        sdbusplus::message::object_path objPath;
-        DBusInteracesList interfaces;
-        msg.read(objPath, interfaces);
-
-        if (_offloadObjPath == objPath.str)
+        if (_offloadObjPath == path) // succesfully offloaded
         {
             log<level::INFO>(
-                fmt::format("offload completed ({}) removing from queue",
-                            _offloadObjPath)
+                fmt::format("Queue dequeue dump offload completed ({}) "
+                            "removing from queue",
+                            path.str)
                     .c_str());
-            _offloadDumpList.erase(objPath.str);
+            _offloadDumpList.erase(path);
             _offloadObjPath.clear();
             offload(); // offload the next dump if any
         }
-        else
+        else // some other dump queued got deleted so simply remove from queue
         {
-            // delete from the offload list if incase the dump get deleted
-            // while it is queued for offload
-            _offloadDumpList.erase(objPath.str);
+            log<level::INFO>(
+                fmt::format("Queue dequeue offload not started dump "
+                            "deleted ({}) removing from queue",
+                            path.str)
+                    .c_str());
+            _offloadDumpList.erase(path);
         }
     }
     catch (const std::exception& ex)
     {
         log<level::ERR>(
-            fmt::format("exception in offloadqueue interfaceRemoved ({})",
-                        ex.what())
-                .c_str());
+            fmt::format("Queue exception in dequeue ({})", ex.what()).c_str());
         throw;
     }
 }
