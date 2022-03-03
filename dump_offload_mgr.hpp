@@ -1,7 +1,9 @@
 #pragma once
 
+#include "dump_host_state_watch.hpp"
 #include "dump_offload_handler.hpp"
 #include "dump_offload_queue.hpp"
+#include "hmc_state_watch.hpp"
 
 #include <memory>
 #include <sdbusplus/bus.hpp>
@@ -28,8 +30,9 @@ class DumpOffloadManager
     /**
      * @brief Constructor
      * @param[in] bus - D-Bus to attach to.
+     * @param[in] event - event handler
      */
-    DumpOffloadManager(sdbusplus::bus::bus& bus);
+    DumpOffloadManager(sdbusplus::bus::bus& bus, sdeventplus::Event& event);
 
     /**
      * @brief Offload dumps existing on the system by sending PLDM request
@@ -37,13 +40,6 @@ class DumpOffloadManager
     void offload();
 
   private:
-    /**
-     * @brief Callback method for property change on the host state object
-     * @param[in] msg response msg from D-Bus request
-     * @return void
-     */
-    void hostStatePropChanged(sdbusplus::message::message& msg);
-
     /** @brief D-Bus to connect to */
     sdbusplus::bus::bus& _bus;
 
@@ -54,6 +50,9 @@ class DumpOffloadManager
     std::vector<std::unique_ptr<DumpOffloadHandler>> _dumpOffloadHandlerList;
 
     /*@brief watch for host state change */
-    std::unique_ptr<sdbusplus::bus::match_t> _hostStatePropWatch;
+    DumpHostStateWatch _hostStateWatch;
+
+    /*@brief watch for HMC state change */
+    HMCStateWatch _hmcStateWatch;
 };
 } // namespace openpower::dump

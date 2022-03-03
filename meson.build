@@ -66,6 +66,8 @@ executable(
     'dump_send_pldm_cmd.cpp',
     'pldm_oem_cmds.cpp',
     'dump_offload_queue.cpp',
+    'dump_host_state_watch.cpp',
+    'hmc_state_watch.cpp',
     dependencies: dump_offload_deps,
     install: true,
 )

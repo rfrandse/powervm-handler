@@ -34,13 +34,11 @@ class DumpDBusWatch
      * @brief Watch on new dump objects created and property change
      * @param[in] bus - Bus to attach to
      * @param[in] dumpQueue - To queue and offload dump
-     * @param[in] entryIntf - dump entry interface (BMC/Host/SBE/Hardware)
      * @param[in] entryObjPath - dump entry object path
      * @param[in] dumpType - dump type to watch
      */
     DumpDBusWatch(sdbusplus::bus::bus& bus, DumpOffloadQueue& dumpQueue,
-                  const std::string& entryIntf, const std::string& entryObjPath,
-                  DumpType dumpType);
+                  const std::string& entryObjPath, DumpType dumpType);
 
     /**
      * @brief Add all in progress dumps to property watch
@@ -78,9 +76,6 @@ class DumpDBusWatch
 
     /** @brief Queue to offload dump requests */
     DumpOffloadQueue& _dumpQueue;
-
-    /** @brief entry interface to watch for */
-    std::string _entryIntf;
 
     /** @brief type of the dump to watch for */
     DumpType _dumpType;

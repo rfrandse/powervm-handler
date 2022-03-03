@@ -2,7 +2,6 @@
 
 #include "dump_dbus_util.hpp"
 
-#include <variant>
 namespace openpower::dump
 {
 using ::openpower::dump::utility::DbusVariantType;
@@ -26,7 +25,7 @@ bool isDumpProgressCompleted(sdbusplus::bus::bus& bus,
     catch (const std::exception& ex)
     {
         log<level::ERR>(
-            fmt::format("Failed to get dump ({}) progress property ({})",
+            fmt::format("Util failed to get dump ({}) progress property ({})",
                         objectPath, ex.what())
                 .c_str());
         throw;
@@ -64,7 +63,7 @@ uint64_t getDumpSize(sdbusplus::bus::bus& bus, const std::string& objectPath)
         if (sizePtr == nullptr)
         {
             std::string err = fmt::format(
-                "Size value not set for dump object ({})", objectPath);
+                "Util size value not set for dump object ({})", objectPath);
             log<level::ERR>(err.c_str());
             throw std::runtime_error(err);
         }
@@ -73,8 +72,9 @@ uint64_t getDumpSize(sdbusplus::bus::bus& bus, const std::string& objectPath)
     catch (const std::exception& ex)
     {
         log<level::INFO>(
-            fmt::format("Failed to get dump size property object ({}) ex({})",
-                        objectPath, ex.what())
+            fmt::format(
+                "Util failed to get dump size property object ({}) ex({})",
+                objectPath, ex.what())
                 .c_str());
         throw;
     }
@@ -91,6 +91,7 @@ bool isSystemHMCManaged(sdbusplus::bus::bus& bus)
                    std::vector<std::tuple<
                        std::string, std::variant<int64_t, std::string>>>>>;
     using BiosBaseTable = std::vector<BiosBaseTableItem>;
+
     try
     {
         std::string hmcManaged{};
@@ -101,7 +102,8 @@ bool isSystemHMCManaged(sdbusplus::bus::bus& bus)
         const auto baseBiosTable = std::get_if<BiosBaseTable>(&retVal);
         if (baseBiosTable == nullptr)
         {
-            log<level::ERR>("Failed to read BIOSconfig property BaseBIOSTable");
+            log<level::ERR>(
+                "Util failed to read BIOSconfig property BaseBIOSTable");
             return false;
         }
         for (const auto& item : *baseBiosTable)
@@ -117,23 +119,26 @@ bool isSystemHMCManaged(sdbusplus::bus::bus& bus)
         }
         if (hmcManaged.empty())
         {
-            log<level::ERR>("Failed to read pvm_hmc_managed property value");
+            log<level::ERR>(
+                "Util failed to read pvm_hmc_managed property value");
             return false;
         }
         if (hmcManaged == "Enabled")
         {
+            log<level::INFO>("Util system is HMC managed");
             return true;
         }
     }
     catch (const std::exception& ex)
     {
         log<level::ERR>(
-            fmt::format("Failed to read pvm_hmc_managed property ({})",
+            fmt::format("Util Failed to read pvm_hmc_managed property ({})",
                         ex.what())
                 .c_str());
         return false;
     }
 
+    log<level::INFO>("Util system is not HMC managed");
     return false;
 }
 
@@ -149,7 +154,7 @@ bool isHostRunning(sdbusplus::bus::bus& bus)
         if (progPtr == nullptr)
         {
             std::string err = fmt::format(
-                "BootProgress value not set for host state object ({})",
+                "Util BootProgress value not set for host state object ({})",
                 hostStateObjPath);
             log<level::ERR>(err.c_str());
             return false;
@@ -161,15 +166,18 @@ bool isHostRunning(sdbusplus::bus::bus& bus)
             (bootProgess == ProgressStages::OSStart) ||
             (bootProgess == ProgressStages::OSRunning))
         {
+            log<level::INFO>("Util host is in running state");
             return true;
         }
     }
     catch (const std::exception& ex)
     {
         log<level::ERR>(
-            fmt::format("Failed to read BootProgress property ({})", ex.what())
+            fmt::format("Util failed to read BootProgress property ({})",
+                        ex.what())
                 .c_str());
     }
+    log<level::INFO>("Util host is not in running state");
     return false;
 }
 
@@ -191,15 +199,16 @@ const std::vector<std::string>
         auto response = bus.call(mapperCall);
         response.read(liObjectPaths);
         log<level::INFO>(
-            fmt::format("DUMP objects size received is ({}) entry({})",
+            fmt::format("Util dumps size received is ({}) entry({})",
                         liObjectPaths.size(), entryIntf)
                 .c_str());
     }
     catch (const std::exception& ex)
     {
         log<level::ERR>(
-            fmt::format("Failed to get dump entry objects entry({}) ex({})",
-                        entryIntf, ex.what())
+            fmt::format(
+                "Util failed to get dump entry objects entry({}) ex({})",
+                entryIntf, ex.what())
                 .c_str());
         throw;
     }

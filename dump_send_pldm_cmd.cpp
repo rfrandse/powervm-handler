@@ -42,7 +42,6 @@ void sendNewDumpCmd(uint32_t dumpId, DumpType dumpType, uint64_t dumpSize)
                                  "PldmDumpType({})",
                                  dumpId, dumpSize, dumpType, pldmDumpType)
                          .c_str());
-
     openpower::dump::pldm::ackNewDump(
         dumpId, static_cast<pldm_fileio_file_type>(pldmDumpType), dumpSize);
 }

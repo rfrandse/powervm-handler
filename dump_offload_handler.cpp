@@ -23,7 +23,7 @@ DumpOffloadHandler::DumpOffloadHandler(sdbusplus::bus::bus& bus,
                                        DumpType dumpType) :
     _bus(bus),
     _dumpOffloader(dumpOffloader), _entryIntf(entryIntf), _dumpType(dumpType),
-    _dumpWatch(bus, dumpOffloader, entryIntf, entryObjPath, dumpType)
+    _dumpWatch(bus, dumpOffloader, entryObjPath, dumpType)
 {
 }
 
@@ -50,7 +50,7 @@ void DumpOffloadHandler::offload()
                 fmt::format("Offloader queue dump to offload ({})", path)
                     .c_str());
             // queue the dump for offloading
-            _dumpOffloader.enqueueForOffloading(path, _dumpType);
+            _dumpOffloader.enqueue(path, _dumpType);
 
         } // end for
 
