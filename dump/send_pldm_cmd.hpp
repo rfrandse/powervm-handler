@@ -1,6 +1,6 @@
 #pragma once
 
-#include "dump_utility.hpp"
+#include "utility.hpp"
 
 namespace openpower::dump::pldm
 {

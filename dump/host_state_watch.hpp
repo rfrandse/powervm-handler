@@ -1,5 +1,5 @@
 #pragma once
-#include "dump_offload_queue.hpp"
+#include "host_offloader_queue.hpp"
 
 #include <sdbusplus/bus.hpp>
 #include <sdbusplus/bus/match.hpp>
@@ -8,25 +8,25 @@ namespace openpower::dump
 {
 
 /**
- * @class DumpHostStateWatch
+ * @class HostStateWatch
  * @brief Add watch on host state change to offload dumps
  */
-class DumpHostStateWatch
+class HostStateWatch
 {
   public:
-    DumpHostStateWatch() = delete;
-    DumpHostStateWatch(const DumpHostStateWatch&) = delete;
-    DumpHostStateWatch& operator=(const DumpHostStateWatch&) = delete;
-    DumpHostStateWatch(DumpHostStateWatch&&) = delete;
-    DumpHostStateWatch& operator=(DumpHostStateWatch&&) = delete;
-    virtual ~DumpHostStateWatch() = default;
+    HostStateWatch() = delete;
+    HostStateWatch(const HostStateWatch&) = delete;
+    HostStateWatch& operator=(const HostStateWatch&) = delete;
+    HostStateWatch(HostStateWatch&&) = delete;
+    HostStateWatch& operator=(HostStateWatch&&) = delete;
+    virtual ~HostStateWatch() = default;
 
     /**
      * @brief Watch on new host state change
      * @param[in] bus - Bus to attach to
      * @param[in] dumpQueue - dump queue
      */
-    DumpHostStateWatch(sdbusplus::bus::bus& bus, DumpOffloadQueue& dumpQueue);
+    HostStateWatch(sdbusplus::bus::bus& bus, HostOffloaderQueue& dumpQueue);
 
   private:
     /**
@@ -40,7 +40,7 @@ class DumpHostStateWatch
     sdbusplus::bus::bus& _bus;
 
     /** @brief Queue to offload dump requests */
-    DumpOffloadQueue& _dumpQueue;
+    HostOffloaderQueue& _dumpQueue;
 
     /*@brief watch for host state change */
     std::unique_ptr<sdbusplus::bus::match_t> _hostStatePropWatch;

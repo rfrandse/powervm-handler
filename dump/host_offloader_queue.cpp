@@ -1,9 +1,9 @@
 #include "config.h"
 
-#include "dump_offload_queue.hpp"
+#include "host_offloader_queue.hpp"
 
-#include "dump_dbus_util.hpp"
-#include "dump_send_pldm_cmd.hpp"
+#include "dbus_util.hpp"
+#include "send_pldm_cmd.hpp"
 
 #include <fmt/format.h>
 
@@ -18,13 +18,13 @@ using ::sdbusplus::bus::match::rules::sender;
 
 constexpr auto timeoutInMilliSeconds = 5000; // 5 sec
 
-DumpOffloadQueue::DumpOffloadQueue(sdbusplus::bus::bus& bus,
-                                   sdeventplus::Event& event) :
+HostOffloaderQueue::HostOffloaderQueue(sdbusplus::bus::bus& bus,
+                                       sdeventplus::Event& event) :
     _bus(bus),
     _event(event), _offloadTimeout(timeoutInMilliSeconds),
-    _offloadTimer(event,
-                  std::bind(std::mem_fn(&DumpOffloadQueue::timerExpired), this),
-                  _offloadTimeout)
+    _offloadTimer(
+        event, std::bind(std::mem_fn(&HostOffloaderQueue::timerExpired), this),
+        _offloadTimeout)
 {
     // initally read the value as this app might run after host is started
     isHostRunning = openpower::dump::isHostRunning(_bus);
@@ -34,7 +34,7 @@ DumpOffloadQueue::DumpOffloadQueue(sdbusplus::bus::bus& bus,
     stopTimer();
 }
 
-void DumpOffloadQueue::startTimer()
+void HostOffloaderQueue::startTimer()
 {
     if (!_offloadTimer.isEnabled() && isHostRunning && !isHMCManagedSystem &&
         !_offloadDumpList.empty())
@@ -59,7 +59,7 @@ void DumpOffloadQueue::startTimer()
     }
 }
 
-void DumpOffloadQueue::stopTimer()
+void HostOffloaderQueue::stopTimer()
 {
     log<level::INFO>(
         fmt::format("Queue stop timer host running ({}) hmcmanaged ({})"
@@ -69,12 +69,12 @@ void DumpOffloadQueue::stopTimer()
     _offloadTimer.setEnabled(false);
 }
 
-void DumpOffloadQueue::timerExpired()
+void HostOffloaderQueue::timerExpired()
 {
     offload();
 }
 
-void DumpOffloadQueue::hostStateChange(bool isRunning)
+void HostOffloaderQueue::hostStateChange(bool isRunning)
 {
     isHostRunning = isRunning;
     if (isHostRunning)
@@ -90,7 +90,7 @@ void DumpOffloadQueue::hostStateChange(bool isRunning)
     }
 }
 
-void DumpOffloadQueue::hmcStateChange(bool isHMCManagedSystem)
+void HostOffloaderQueue::hmcStateChange(bool isHMCManagedSystem)
 {
     isHMCManagedSystem = isHMCManagedSystem;
     if (!isHMCManagedSystem)
@@ -107,7 +107,7 @@ void DumpOffloadQueue::hmcStateChange(bool isHMCManagedSystem)
     }
 }
 
-void DumpOffloadQueue::offload()
+void HostOffloaderQueue::offload()
 {
     try
     {
@@ -149,7 +149,7 @@ void DumpOffloadQueue::offload()
     }
 }
 
-void DumpOffloadQueue::enqueue(const object_path& path, DumpType type)
+void HostOffloaderQueue::enqueue(const object_path& path, DumpType type)
 {
     log<level::INFO>(fmt::format("Queue enqueue dump ({}) size of Q ({})",
                                  path.str, _offloadDumpList.size())
@@ -160,7 +160,7 @@ void DumpOffloadQueue::enqueue(const object_path& path, DumpType type)
     startTimer();
 }
 
-void DumpOffloadQueue::dequeue(const object_path& path)
+void HostOffloaderQueue::dequeue(const object_path& path)
 {
     log<level::INFO>(fmt::format("Queue dequeue ({}) size of Q ({})", path.str,
                                  _offloadDumpList.size())
@@ -178,9 +178,6 @@ void DumpOffloadQueue::dequeue(const object_path& path)
     // if no more dumps to offload stop the timer
     if (_offloadDumpList.empty())
     {
-        log<level::INFO>(
-            fmt::format("Queue offloaded dump completed ({}) ", path.str)
-                .c_str());
         stopTimer();
     }
 }

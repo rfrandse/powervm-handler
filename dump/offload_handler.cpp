@@ -1,9 +1,9 @@
 #include "config.h"
 
-#include "dump_offload_handler.hpp"
+#include "offload_handler.hpp"
 
-#include "dump_dbus_util.hpp"
-#include "dump_utility.hpp"
+#include "dbus_util.hpp"
+#include "utility.hpp"
 
 #include <fmt/format.h>
 
@@ -16,18 +16,18 @@ using ::openpower::dump::utility::ManagedObjectType;
 using ::phosphor::logging::level;
 using ::phosphor::logging::log;
 
-DumpOffloadHandler::DumpOffloadHandler(sdbusplus::bus::bus& bus,
-                                       DumpOffloadQueue& dumpOffloader,
-                                       const std::string& entryIntf,
-                                       const std::string& entryObjPath,
-                                       DumpType dumpType) :
+OffloadHandler::OffloadHandler(sdbusplus::bus::bus& bus,
+                               HostOffloaderQueue& dumpOffloader,
+                               const std::string& entryIntf,
+                               const std::string& entryObjPath,
+                               DumpType dumpType) :
     _bus(bus),
     _dumpOffloader(dumpOffloader), _entryIntf(entryIntf), _dumpType(dumpType),
     _dumpWatch(bus, dumpOffloader, entryObjPath, dumpType)
 {
 }
 
-void DumpOffloadHandler::offload()
+void OffloadHandler::offload()
 {
     try
     {

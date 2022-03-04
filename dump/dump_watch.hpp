@@ -1,7 +1,7 @@
 #pragma once
 
-#include "dump_offload_queue.hpp"
-#include "dump_utility.hpp"
+#include "host_offloader_queue.hpp"
+#include "utility.hpp"
 
 #include <map>
 #include <memory>
@@ -15,20 +15,20 @@ using ::openpower::dump::utility::DumpType;
 using ::sdbusplus::message::object_path;
 
 /**
- * @class DumpDBusWatch
- * @brief Add watch on new dump entries created so as to offload
+ * @class DumpWatch
+ * @brief Add watch on new dump entries created/deleted so as to offload
  * @details Adds watch on the dump progress property for the newly created
  *  dumps. Initiates offload when dump progress property is changed to complete
  */
-class DumpDBusWatch
+class DumpWatch
 {
   public:
-    DumpDBusWatch() = delete;
-    DumpDBusWatch(const DumpDBusWatch&) = delete;
-    DumpDBusWatch& operator=(const DumpDBusWatch&) = delete;
-    DumpDBusWatch(DumpDBusWatch&&) = delete;
-    DumpDBusWatch& operator=(DumpDBusWatch&&) = delete;
-    virtual ~DumpDBusWatch() = default;
+    DumpWatch() = delete;
+    DumpWatch(const DumpWatch&) = delete;
+    DumpWatch& operator=(const DumpWatch&) = delete;
+    DumpWatch(DumpWatch&&) = delete;
+    DumpWatch& operator=(DumpWatch&&) = delete;
+    virtual ~DumpWatch() = default;
 
     /**
      * @brief Watch on new dump objects created and property change
@@ -37,8 +37,8 @@ class DumpDBusWatch
      * @param[in] entryObjPath - dump entry object path
      * @param[in] dumpType - dump type to watch
      */
-    DumpDBusWatch(sdbusplus::bus::bus& bus, DumpOffloadQueue& dumpQueue,
-                  const std::string& entryObjPath, DumpType dumpType);
+    DumpWatch(sdbusplus::bus::bus& bus, HostOffloaderQueue& dumpQueue,
+              const std::string& entryObjPath, DumpType dumpType);
 
     /**
      * @brief Add all in progress dumps to property watch
@@ -75,7 +75,7 @@ class DumpDBusWatch
     sdbusplus::bus::bus& _bus;
 
     /** @brief Queue to offload dump requests */
-    DumpOffloadQueue& _dumpQueue;
+    HostOffloaderQueue& _dumpQueue;
 
     /** @brief type of the dump to watch for */
     DumpType _dumpType;

@@ -1,8 +1,8 @@
 #include "config.h"
 
-#include "dump_dbus_watch.hpp"
+#include "dump_watch.hpp"
 
-#include "dump_dbus_util.hpp"
+#include "dbus_util.hpp"
 
 #include <fmt/format.h>
 
@@ -17,10 +17,8 @@ using ::phosphor::logging::level;
 using ::phosphor::logging::log;
 using ::sdbusplus::bus::match::rules::sender;
 
-DumpDBusWatch::DumpDBusWatch(sdbusplus::bus::bus& bus,
-                             DumpOffloadQueue& dumpQueue,
-                             const std::string& entryObjPath,
-                             DumpType dumpType) :
+DumpWatch::DumpWatch(sdbusplus::bus::bus& bus, HostOffloaderQueue& dumpQueue,
+                     const std::string& entryObjPath, DumpType dumpType) :
     _bus(bus),
     _dumpQueue(dumpQueue), _dumpType(dumpType)
 {
@@ -37,7 +35,7 @@ DumpDBusWatch::DumpDBusWatch(sdbusplus::bus::bus& bus,
         [this](auto& msg) { this->interfaceRemoved(msg); });
 }
 
-void DumpDBusWatch::interfaceAdded(sdbusplus::message::message& msg)
+void DumpWatch::interfaceAdded(sdbusplus::message::message& msg)
 {
     try
     {
@@ -64,7 +62,7 @@ void DumpDBusWatch::interfaceAdded(sdbusplus::message::message& msg)
     }
 }
 
-void DumpDBusWatch::interfaceRemoved(sdbusplus::message::message& msg)
+void DumpWatch::interfaceRemoved(sdbusplus::message::message& msg)
 {
     try
     {
@@ -87,8 +85,8 @@ void DumpDBusWatch::interfaceRemoved(sdbusplus::message::message& msg)
     }
 }
 
-void DumpDBusWatch::propertiesChanged(const object_path& objPath,
-                                      sdbusplus::message::message& msg)
+void DumpWatch::propertiesChanged(const object_path& objPath,
+                                  sdbusplus::message::message& msg)
 {
     try
     {
@@ -124,7 +122,7 @@ void DumpDBusWatch::propertiesChanged(const object_path& objPath,
     }
 }
 
-void DumpDBusWatch::addInProgressDumpsToWatch(std::vector<std::string> paths)
+void DumpWatch::addInProgressDumpsToWatch(std::vector<std::string> paths)
 {
     try
     {

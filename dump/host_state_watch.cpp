@@ -1,6 +1,6 @@
-#include "dump_host_state_watch.hpp"
+#include "host_state_watch.hpp"
 
-#include "dump_dbus_util.hpp"
+#include "dbus_util.hpp"
 
 #include <fmt/format.h>
 
@@ -12,8 +12,8 @@ using ::openpower::dump::utility::DBusPropertiesMap;
 using ::phosphor::logging::level;
 using ::phosphor::logging::log;
 
-DumpHostStateWatch::DumpHostStateWatch(sdbusplus::bus::bus& bus,
-                                       DumpOffloadQueue& dumpQueue) :
+HostStateWatch::HostStateWatch(sdbusplus::bus::bus& bus,
+                               HostOffloaderQueue& dumpQueue) :
     _bus(bus),
     _dumpQueue(dumpQueue)
 {
@@ -25,7 +25,7 @@ DumpHostStateWatch::DumpHostStateWatch(sdbusplus::bus::bus& bus,
         [this](auto& msg) { this->propertyChanged(msg); });
 }
 
-void DumpHostStateWatch::propertyChanged(sdbusplus::message::message& msg)
+void HostStateWatch::propertyChanged(sdbusplus::message::message& msg)
 {
     std::string intf;
     DBusPropertiesMap propMap;

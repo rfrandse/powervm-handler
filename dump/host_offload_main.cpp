@@ -1,5 +1,5 @@
-#include "dump_dbus_util.hpp"
-#include "dump_offload_mgr.hpp"
+#include "dbus_util.hpp"
+#include "offload_manager.hpp"
 
 #include <fmt/format.h>
 
@@ -28,7 +28,7 @@ int main()
             log<level::ERR>("HMC managed system exiting the application");
             return 0;
         }
-        openpower::dump::DumpOffloadManager manager(bus, event);
+        openpower::dump::OffloadManager manager(bus, event);
         manager.offload();
         bus.attach_event(event.get(), SD_EVENT_PRIORITY_NORMAL);
         return event.loop();

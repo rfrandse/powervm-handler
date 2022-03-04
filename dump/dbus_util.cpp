@@ -1,6 +1,6 @@
 #include "config.h"
 
-#include "dump_dbus_util.hpp"
+#include "dbus_util.hpp"
 
 namespace openpower::dump
 {

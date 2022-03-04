@@ -1,5 +1,5 @@
 #pragma once
-#include "dump_offload_queue.hpp"
+#include "host_offloader_queue.hpp"
 
 #include <sdbusplus/bus.hpp>
 #include <sdbusplus/bus/match.hpp>
@@ -27,7 +27,7 @@ class HMCStateWatch
      * @param[in] bus - Bus to attach to
      * @param[in] dumpQueue - dump queue
      */
-    HMCStateWatch(sdbusplus::bus::bus& bus, DumpOffloadQueue& dumpQueue);
+    HMCStateWatch(sdbusplus::bus::bus& bus, HostOffloaderQueue& dumpQueue);
 
   private:
     /**
@@ -41,7 +41,7 @@ class HMCStateWatch
     sdbusplus::bus::bus& _bus;
 
     /** @brief Queue to offload dump requests */
-    DumpOffloadQueue& _dumpQueue;
+    HostOffloaderQueue& _dumpQueue;
 
     /*@brief watch for hmc state change */
     std::unique_ptr<sdbusplus::bus::match_t> _hmcStatePropWatch;

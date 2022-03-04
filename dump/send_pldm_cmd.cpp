@@ -1,4 +1,4 @@
-#include "dump_send_pldm_cmd.hpp"
+#include "send_pldm_cmd.hpp"
 
 #include "pldm_oem_cmds.hpp"
 

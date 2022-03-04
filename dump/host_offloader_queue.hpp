@@ -1,6 +1,6 @@
 #pragma once
 
-#include "dump_utility.hpp"
+#include "utility.hpp"
 
 #include <map>
 #include <sdbusplus/bus.hpp>
@@ -16,30 +16,27 @@ using ::sdeventplus::ClockId::Monotonic;
 using ::sdeventplus::utility::Timer;
 
 /**
- * @class DumpOffloadQueue
- * @brief Queue the dump offload request and send one by one after the
- *        offload is completed. When an offload is completed the dump D-Bus
- *        object will be deleted, subscribe to that signal and then offload
- *        the next dump in the queue.
+ * @class HostOffloaderQueue
+ * @brief To queue the dump offload requests to be sent to the host.
  * @details PHYP could not handle multiple dump offload requests at the same
  *          time, queueing the requests and sending when one offload is done
  */
-class DumpOffloadQueue
+class HostOffloaderQueue
 {
   public:
-    DumpOffloadQueue() = delete;
-    DumpOffloadQueue(const DumpOffloadQueue&) = delete;
-    DumpOffloadQueue& operator=(const DumpOffloadQueue&) = delete;
-    DumpOffloadQueue(DumpOffloadQueue&&) = delete;
-    DumpOffloadQueue& operator=(DumpOffloadQueue&&) = delete;
-    virtual ~DumpOffloadQueue() = default;
+    HostOffloaderQueue() = delete;
+    HostOffloaderQueue(const HostOffloaderQueue&) = delete;
+    HostOffloaderQueue& operator=(const HostOffloaderQueue&) = delete;
+    HostOffloaderQueue(HostOffloaderQueue&&) = delete;
+    HostOffloaderQueue& operator=(HostOffloaderQueue&&) = delete;
+    virtual ~HostOffloaderQueue() = default;
 
     /**
      * @brief Constructor
      * @param[in] bus - D-Bus to attach to
      * @param[in] event - event handler
      */
-    DumpOffloadQueue(sdbusplus::bus::bus& bus, sdeventplus::Event& event);
+    HostOffloaderQueue(sdbusplus::bus::bus& bus, sdeventplus::Event& event);
 
     /**
      * @brief Queue the dumps for offloading

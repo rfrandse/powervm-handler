@@ -1,6 +1,6 @@
 #include "hmc_state_watch.hpp"
 
-#include "dump_dbus_util.hpp"
+#include "dbus_util.hpp"
 
 #include <fmt/format.h>
 
@@ -13,7 +13,7 @@ using ::phosphor::logging::level;
 using ::phosphor::logging::log;
 
 HMCStateWatch::HMCStateWatch(sdbusplus::bus::bus& bus,
-                             DumpOffloadQueue& dumpQueue) :
+                             HostOffloaderQueue& dumpQueue) :
     _bus(bus),
     _dumpQueue(dumpQueue)
 {
@@ -53,12 +53,12 @@ void HMCStateWatch::propertyChanged(sdbusplus::message::message& msg)
                     auto val = std::get_if<std::string>(&attrValue);
                     if (val != nullptr && *val == "Enabled")
                     {
-                        log<level::INFO>("enabled");
+                        log<level::INFO>("System changed to HMC managed");
                         _dumpQueue.hmcStateChange(true);
                     }
                     else
                     {
-                        log<level::INFO>("Disabled");
+                        log<level::INFO>("System changed to non HMC managed");
                         _dumpQueue.hmcStateChange(false);
                     }
                     break;
