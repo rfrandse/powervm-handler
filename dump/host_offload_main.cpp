@@ -1,11 +1,12 @@
-#include "dump_dbus_util.hpp"
-#include "dump_offload_mgr.hpp"
+#include "dbus_util.hpp"
+#include "offload_manager.hpp"
 
 #include <fmt/format.h>
 
 #include <cstdlib>
 #include <phosphor-logging/log.hpp>
 #include <sdbusplus/bus.hpp>
+#include <sdeventplus/source/event.hpp>
 
 using ::phosphor::logging::level;
 using ::phosphor::logging::log;
@@ -27,15 +28,7 @@ int main()
             log<level::ERR>("HMC managed system exiting the application");
             return 0;
         }
-        log<level::INFO>("Non HMC managed system initiating dump offloads");
-
-        if (!openpower::dump::isHostRunning(bus))
-        {
-            log<level::ERR>("Host is not in running state, offload will start "
-                            "when Host changes to running state");
-        }
-
-        openpower::dump::DumpOffloadManager manager(bus);
+        openpower::dump::OffloadManager manager(bus, event);
         manager.offload();
         bus.attach_event(event.get(), SD_EVENT_PRIORITY_NORMAL);
         return event.loop();

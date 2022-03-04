@@ -82,17 +82,10 @@ void ackNewDump(uint32_t dumpId, pldm_fileio_file_type pldmDumpType,
             Reason("Acknowledging new file failed due to encoding error"));
     }
 
-    uint8_t* pldmRespMsg = nullptr;
-    size_t pldmRespMsgSize;
-
     internal::CustomFd pldmFd(openPLDM());
 
-    retCode =
-        pldm_send_recv(mctpEndPointId, pldmFd(), fileAckReqMsg.data(),
-                       fileAckReqMsg.size(), &pldmRespMsg, &pldmRespMsgSize);
-
-    std::unique_ptr<uint8_t, decltype(std::free)*> pldmRespMsgPtr{pldmRespMsg,
-                                                                  std::free};
+    retCode = pldm_send(mctpEndPointId, pldmFd(), fileAckReqMsg.data(),
+                        fileAckReqMsg.size());
     if (retCode != PLDM_REQUESTER_SUCCESS)
     {
         auto errorNumber = errno;
@@ -106,26 +99,5 @@ void ackNewDump(uint32_t dumpId, pldm_fileio_file_type pldmDumpType,
         elog<NotAllowed>(Reason("New file available  via pldm is not "
                                 "allowed due to fileack send failed"));
     }
-
-    uint8_t completionCode;
-
-    retCode =
-        decode_new_file_resp(reinterpret_cast<pldm_msg*>(pldmRespMsgPtr.get()),
-                             pldmRespMsgSize - pldmMsgHdrSize, &completionCode);
-    if (retCode || completionCode)
-    {
-        log<level::ERR>(
-            fmt::format("Failed to send new file available, dumpId({}), "
-                        "pldmDumpType({}), rc({}), "
-                        "completionCode({})",
-                        dumpId, pldmDumpType, retCode, completionCode)
-                .c_str());
-        elog<NotAllowed>(Reason("Sendinf new file available via pldm is "
-                                "failed"));
-    }
-
-    log<level::INFO>(
-        fmt::format("Acknowledged PHYP about new dump, dumpId({})", dumpId)
-            .c_str());
 }
 } // namespace openpower::dump::pldm
