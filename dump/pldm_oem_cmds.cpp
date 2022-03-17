@@ -57,47 +57,54 @@ mctp_eid_t readEID()
 }
 } // namespace internal
 
-void ackNewDump(uint32_t dumpId, pldm_fileio_file_type pldmDumpType,
-                uint64_t dumpSize)
+void newFileAvailable(uint32_t dumpId, pldm_fileio_file_type pldmDumpType,
+                      uint64_t dumpSize)
 {
     const size_t pldmMsgHdrSize = sizeof(pldm_msg_hdr);
-    std::array<uint8_t, pldmMsgHdrSize + PLDM_FILE_ACK_REQ_BYTES> fileAckReqMsg;
+    std::array<uint8_t, pldmMsgHdrSize + PLDM_NEW_FILE_REQ_BYTES>
+        newFileAvailReqMsg;
 
     mctp_eid_t mctpEndPointId = internal::readEID();
 
     auto pldmInstanceId = getPLDMInstanceID(mctpEndPointId);
-
-    int retCode =
-        encode_new_file_req(pldmInstanceId, pldmDumpType, dumpId, dumpSize,
-                            reinterpret_cast<pldm_msg*>(fileAckReqMsg.data()));
+    log<level::INFO>(
+        fmt::format("encode_new_file_req Instance ID ({}) "
+                    "DumpID ({}) DumpType ({}) DumpSize({})  ReqMsgSize({})",
+                    pldmInstanceId, dumpId, pldmDumpType, dumpSize,
+                    newFileAvailReqMsg.size())
+            .c_str());
+    int retCode = encode_new_file_req(
+        pldmInstanceId, pldmDumpType, dumpId, dumpSize,
+        reinterpret_cast<pldm_msg*>(newFileAvailReqMsg.data()));
     if (retCode != PLDM_SUCCESS)
     {
         log<level::ERR>(
-            fmt::format("Failed to encode pldm FileAck for new dump available "
-                        "dumpId({}), "
-                        "pldmDumpType({}),rc({})",
-                        dumpId, pldmDumpType, retCode)
+            fmt::format(
+                "Failed to encode pldm New file req for new dump available "
+                "dumpId({}), pldmDumpType({}),rc({})",
+                dumpId, pldmDumpType, retCode)
                 .c_str());
-        elog<NotAllowed>(
-            Reason("Acknowledging new file failed due to encoding error"));
+        elog<NotAllowed>(Reason(
+            "Acknowledging new file request failed due to encoding error"));
     }
 
     internal::CustomFd pldmFd(openPLDM());
 
-    retCode = pldm_send(mctpEndPointId, pldmFd(), fileAckReqMsg.data(),
-                        fileAckReqMsg.size());
+    retCode = pldm_send(mctpEndPointId, pldmFd(), newFileAvailReqMsg.data(),
+                        newFileAvailReqMsg.size());
     if (retCode != PLDM_REQUESTER_SUCCESS)
     {
         auto errorNumber = errno;
         log<level::ERR>(
-            fmt::format("Failed to send pldm FileAck for new dump available, "
-                        "dumpId({}), pldmDumpType({}), "
-                        "rc({}), errno({}), errmsg({})",
-                        dumpId, pldmDumpType, retCode, errorNumber,
-                        strerror(errorNumber))
+            fmt::format(
+                "Failed to send pldm new file request for new dump available, "
+                "dumpId({}), pldmDumpType({}), "
+                "rc({}), errno({}), errmsg({})",
+                dumpId, pldmDumpType, retCode, errorNumber,
+                strerror(errorNumber))
                 .c_str());
         elog<NotAllowed>(Reason("New file available  via pldm is not "
-                                "allowed due to fileack send failed"));
+                                "allowed due to new file request send failed"));
     }
 }
 } // namespace openpower::dump::pldm

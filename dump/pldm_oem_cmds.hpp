@@ -13,7 +13,7 @@ namespace internal
 mctp_eid_t readEID();
 } // namespace internal
 /**
- * @brief Acknowledge new dump creation
+ * @brief Send new file available PLDM command
  *
  * @param[in] id - Dump id
  * @param[in] dumpType - Type of the dump.
@@ -21,5 +21,6 @@ mctp_eid_t readEID();
  * @return NULL
  *
  */
-void ackNewDump(uint32_t id, pldm_fileio_file_type dumpType, uint64_t dumpSize);
+void newFileAvailable(uint32_t id, pldm_fileio_file_type dumpType,
+                      uint64_t dumpSize);
 } // namespace openpower::dump::pldm
