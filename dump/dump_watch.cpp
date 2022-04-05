@@ -44,14 +44,41 @@ void DumpWatch::interfaceAdded(sdbusplus::message::message& msg)
         msg.read(objPath, interfaces);
         log<level::INFO>(
             fmt::format("Watch interfaceAdded path ({})", objPath.str).c_str());
-        _entryPropWatchList.emplace(
-            objPath, std::make_unique<sdbusplus::bus::match_t>(
-                         _bus,
-                         sdbusplus::bus::match::rules::propertiesChanged(
-                             objPath, progressIntf),
-                         [this, objPath](auto& msg) {
-                             this->propertiesChanged(objPath, msg);
-                         }));
+
+        // check if dump generation is already completed
+        bool isComplete = false;
+        auto iface = interfaces.find(progressIntf);
+        if (iface != interfaces.end())
+        {
+            auto prop = iface->second.find("Status");
+            if (prop != iface->second.end())
+            {
+                auto status = std::get_if<std::string>(&prop->second);
+                if (status != nullptr)
+                {
+                    if (*status == progressComplete)
+                    {
+                        isComplete = true;
+                    }
+                }
+            }
+        }
+        if (isComplete)
+        {
+            // queue the dump for offloading
+            _dumpQueue.enqueue(objPath, _dumpType);
+        }
+        else
+        {
+            _entryPropWatchList.emplace(
+                objPath, std::make_unique<sdbusplus::bus::match_t>(
+                             _bus,
+                             sdbusplus::bus::match::rules::propertiesChanged(
+                                 objPath, progressIntf),
+                             [this, objPath](auto& msg) {
+                                 this->propertiesChanged(objPath, msg);
+                             }));
+        }
     }
     catch (const std::exception& ex)
     {
