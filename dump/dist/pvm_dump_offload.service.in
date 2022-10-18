@@ -1,11 +1,11 @@
 [Unit]
-Description=PowerVM Handler
+Description=PowerVM Handler %i
 Wants=phosphor-debug-collector.service
+Wants=obmc-host-started@%i.target
 After=phosphor-debug-collector.service
 After=xyz.openbmc_project.biosconfig_manager.service
-After=obmc-power-on@0.target
-Conflicts=obmc-host-stop@0.target
-Conflicts=obmc-host-timeout@0.target
+After=obmc-host-started@%i.target
+Conflicts=obmc-host-stop@%i.target
 
 [Service]
 ExecStart=@bindir@/pvm_dump_offload
