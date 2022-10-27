@@ -67,6 +67,8 @@ void HostOffloaderQueue::stopTimer()
                     isHostRunning, isHMCManagedSystem, _offloadDumpList.size())
             .c_str());
     _offloadTimer.setEnabled(false);
+
+    _offloadInProgress = false;
 }
 
 void HostOffloaderQueue::timerExpired()
@@ -79,13 +81,11 @@ void HostOffloaderQueue::hostStateChange(bool isRunning)
     isHostRunning = isRunning;
     if (isHostRunning)
     {
-        log<level::INFO>("Queue host state changed to running");
         // dumps might have been queued while host is not running, offload them
         startTimer();
     }
     else
     {
-        log<level::INFO>("Queue host state changed to not running");
         stopTimer();
     }
 }
@@ -95,14 +95,12 @@ void HostOffloaderQueue::hmcStateChange(bool isHMCManagedSystem)
     isHMCManagedSystem = isHMCManagedSystem;
     if (!isHMCManagedSystem)
     {
-        log<level::INFO>("Queue HMC state change non HMC managed system");
         // dumps might have been queued while system is HMC managed, offload
         // them
         startTimer();
     }
     else
     {
-        log<level::INFO>("Queue HMC state change HMC managed system");
         stopTimer();
     }
 }
@@ -146,6 +144,7 @@ void HostOffloaderQueue::offload()
 
         // error, deque the dump from offloading
         dequeue(_offloadObjPath);
+        _offloadInProgress = false;
     }
 }
 
