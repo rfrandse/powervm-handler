@@ -1,6 +1,5 @@
 [Unit]
-Description=PowerVM Handler %i
-Wants=phosphor-debug-collector.service
+Description=PowerVM Handler Host %i
 Wants=obmc-host-started@%i.target
 After=xyz.openbmc_project.Dump.Manager.service
 After=org.open_power.Dump.Manager.service
