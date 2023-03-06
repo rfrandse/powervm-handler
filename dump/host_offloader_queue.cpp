@@ -78,15 +78,19 @@ void HostOffloaderQueue::timerExpired()
 
 void HostOffloaderQueue::hostStateChange(bool isRunning)
 {
-    isHostRunning = isRunning;
-    if (isHostRunning)
+    if(isHostRunning != isRunning)
     {
-        // dumps might have been queued while host is not running, offload them
-        startTimer();
-    }
-    else
-    {
-        stopTimer();
+        isHostRunning = isRunning;
+        if (isHostRunning)
+        {
+            // dumps might have been queued while host is not running,
+            // offload them
+            startTimer();
+        }
+        else
+        {
+            stopTimer();
+        }
     }
 }
 
