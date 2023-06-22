@@ -160,13 +160,11 @@ bool isHostRunning(sdbusplus::bus::bus& bus)
             return false;
         }
 
-        ProgressStages bootProgess = sdbusplus::xyz::openbmc_project::State::
+        ProgressStages bootProgress = sdbusplus::xyz::openbmc_project::State::
             Boot::server::Progress::convertProgressStagesFromString(*progPtr);
-        if ((bootProgess == ProgressStages::SystemInitComplete) ||
-            (bootProgess == ProgressStages::OSStart) ||
-            (bootProgess == ProgressStages::OSRunning))
+        if (bootProgress == ProgressStages::OSRunning)
         {
-            log<level::INFO>("Util host is in running state");
+            log<level::INFO>("Util host is in  BootProgress::OSRunning");
             return true;
         }
     }
@@ -177,7 +175,7 @@ bool isHostRunning(sdbusplus::bus::bus& bus)
                         ex.what())
                 .c_str());
     }
-    log<level::INFO>("Util host is not in running state");
+    log<level::INFO>("Util host is not in  BootProgress::OSRunning state");
     return false;
 }
 

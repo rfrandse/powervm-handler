@@ -43,11 +43,9 @@ void HostStateWatch::propertyChanged(sdbusplus::message::message& msg)
                 ProgressStages bootProgress =
                     sdbusplus::xyz::openbmc_project::State::Boot::server::
                         Progress::convertProgressStagesFromString(*progress);
-                if ((bootProgress == ProgressStages::SystemInitComplete) ||
-                    (bootProgress == ProgressStages::OSStart) ||
-                    (bootProgress == ProgressStages::OSRunning))
+                if (bootProgress == ProgressStages::OSRunning)
                 {
-                    log<level::INFO>("Host state changed to running");
+                    log<level::INFO>("Host state changed to OSRunning");
                     _dumpQueue.hostStateChange(true);
                 }
                 else
