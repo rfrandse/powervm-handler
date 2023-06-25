@@ -1,6 +1,7 @@
 #include "host_state_watch.hpp"
 
 #include "dbus_util.hpp"
+#include "utility.hpp"
 
 #include <fmt/format.h>
 
@@ -37,15 +38,12 @@ void HostStateWatch::propertyChanged(sdbusplus::message::message& msg)
     {
         if (prop.first == "BootProgress")
         {
-            auto progress = std::get_if<std::string>(&prop.second);
+            auto progress = std::get_if<ProgressStages>(&prop.second);
             if (progress != nullptr)
             {
-                ProgressStages bootProgress =
-                    sdbusplus::xyz::openbmc_project::State::Boot::server::
-                        Progress::convertProgressStagesFromString(*progress);
-                if (bootProgress == ProgressStages::OSRunning)
+                if (*progress == ProgressStages::OSRunning)
                 {
-                    log<level::INFO>("Host state changed to OSRunning");
+                    log<level::INFO>("Host state is ProgressStages::OSRunning");
                     _dumpQueue.hostStateChange(true);
                 }
                 else

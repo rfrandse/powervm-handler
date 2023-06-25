@@ -146,12 +146,15 @@ bool isHostRunning(sdbusplus::bus::bus& bus)
 {
     try
     {
+        using PropertiesVariant =
+            sdbusplus::utility::dedup_variant_t<ProgressStages>;
+
         constexpr auto hostStateObjPath = "/xyz/openbmc_project/state/host0";
-        auto retVal = readDBusProperty<DBusProgressValue_t>(
+        auto retVal = readDBusProperty<PropertiesVariant>(
             bus, "xyz.openbmc_project.State.Host", hostStateObjPath,
             "xyz.openbmc_project.State.Boot.Progress", "BootProgress");
-        const std::string* progPtr = std::get_if<std::string>(&retVal);
-        if (progPtr == nullptr)
+        const ProgressStages* progPtr = std::get_if<ProgressStages>(&retVal);
+        if (progPtr != nullptr)
         {
             std::string err = fmt::format(
                 "Util BootProgress value not set for host state object ({})",
@@ -159,10 +162,7 @@ bool isHostRunning(sdbusplus::bus::bus& bus)
             log<level::ERR>(err.c_str());
             return false;
         }
-
-        ProgressStages bootProgress = sdbusplus::xyz::openbmc_project::State::
-            Boot::server::Progress::convertProgressStagesFromString(*progPtr);
-        if (bootProgress == ProgressStages::OSRunning)
+        if (*progPtr == ProgressStages::OSRunning)
         {
             log<level::INFO>("Util host is in  BootProgress::OSRunning");
             return true;
