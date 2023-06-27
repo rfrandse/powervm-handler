@@ -31,9 +31,6 @@ void HostStateWatch::propertyChanged(sdbusplus::message::message& msg)
     std::string intf;
     DBusPropertiesMap propMap;
     msg.read(intf, propMap);
-    log<level::INFO>(
-        fmt::format("Host state propertiesChanged interface ({}) ", intf)
-            .c_str());
     for (auto prop : propMap)
     {
         if (prop.first == "BootProgress")
@@ -48,13 +45,11 @@ void HostStateWatch::propertyChanged(sdbusplus::message::message& msg)
                 }
                 else
                 {
-                    log<level::INFO>("Host state changed to not running");
                     _dumpQueue.hostStateChange(false);
                 }
             }
             else
             {
-                log<level::INFO>("Host state changed to not running");
                 _dumpQueue.hostStateChange(false);
             }
         }

@@ -156,10 +156,6 @@ bool isHostRunning(sdbusplus::bus::bus& bus)
         const ProgressStages* progPtr = std::get_if<ProgressStages>(&retVal);
         if (progPtr != nullptr)
         {
-            std::string err = fmt::format(
-                "Util BootProgress value not set for host state object ({})",
-                hostStateObjPath);
-            log<level::ERR>(err.c_str());
             return false;
         }
         if (*progPtr == ProgressStages::OSRunning)
