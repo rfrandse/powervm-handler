@@ -1,6 +1,7 @@
 #include "host_state_watch.hpp"
 
 #include "dbus_util.hpp"
+#include "utility.hpp"
 
 #include <fmt/format.h>
 
@@ -30,35 +31,25 @@ void HostStateWatch::propertyChanged(sdbusplus::message::message& msg)
     std::string intf;
     DBusPropertiesMap propMap;
     msg.read(intf, propMap);
-    log<level::INFO>(
-        fmt::format("Host state propertiesChanged interface ({}) ", intf)
-            .c_str());
     for (auto prop : propMap)
     {
         if (prop.first == "BootProgress")
         {
-            auto progress = std::get_if<std::string>(&prop.second);
+            auto progress = std::get_if<ProgressStages>(&prop.second);
             if (progress != nullptr)
             {
-                ProgressStages bootProgress =
-                    sdbusplus::xyz::openbmc_project::State::Boot::server::
-                        Progress::convertProgressStagesFromString(*progress);
-                if ((bootProgress == ProgressStages::SystemInitComplete) ||
-                    (bootProgress == ProgressStages::OSStart) ||
-                    (bootProgress == ProgressStages::OSRunning))
+                if (*progress == ProgressStages::OSRunning)
                 {
-                    log<level::INFO>("Host state changed to running");
+                    log<level::INFO>("Host state is ProgressStages::OSRunning");
                     _dumpQueue.hostStateChange(true);
                 }
                 else
                 {
-                    log<level::INFO>("Host state changed to not running");
                     _dumpQueue.hostStateChange(false);
                 }
             }
             else
             {
-                log<level::INFO>("Host state changed to not running");
                 _dumpQueue.hostStateChange(false);
             }
         }

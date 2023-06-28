@@ -6,7 +6,6 @@
 
 #include <cstdint>
 #include <phosphor-logging/log.hpp>
-#include <xyz/openbmc_project/State/Boot/Progress/server.hpp>
 
 namespace openpower::dump
 {
@@ -14,12 +13,6 @@ using ::openpower::dump::utility::DBusPropertiesMap;
 using ::phosphor::logging::level;
 using ::phosphor::logging::log;
 using ::sdbusplus::message::object_path;
-
-using ProgressStages = sdbusplus::xyz::openbmc_project::State::Boot::server::
-    Progress::ProgressStages;
-using DBusProgressValue_t =
-    std::variant<std::string, bool, std::vector<uint8_t>,
-                 std::vector<std::string>>;
 
 /**
  * @brief Read progress property from the interface map object

@@ -2,6 +2,10 @@
 
 #include <sdbusplus/message.hpp>
 #include <sdbusplus/utility/dedup_variant.hpp>
+#include <xyz/openbmc_project/State/Boot/Progress/server.hpp>
+
+using ProgressStages = sdbusplus::xyz::openbmc_project::State::Boot::server::
+    Progress::ProgressStages;
 
 namespace openpower::dump::utility
 {
@@ -17,7 +21,8 @@ using DbusVariantType = sdbusplus::utility::dedup_variant_t<
     uint16_t,
     uint8_t,
     bool,
-    size_t
+    size_t,
+    ProgressStages
  >;
 
 // clang-format on
